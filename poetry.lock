@@ -1,0 +1,243 @@
+[[package]]
+category = "main"
+description = "Python package for providing Mozilla's CA Bundle."
+name = "certifi"
+optional = false
+python-versions = "*"
+version = "2020.6.20"
+
+[[package]]
+category = "main"
+description = "Universal encoding detector for Python 2 and 3"
+name = "chardet"
+optional = false
+python-versions = "*"
+version = "3.0.4"
+
+[[package]]
+category = "main"
+description = "Composable command line interface toolkit"
+name = "click"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "7.1.2"
+
+[[package]]
+category = "main"
+description = "A backport of the dataclasses module for Python 3.6"
+marker = "python_version < \"3.7\""
+name = "dataclasses"
+optional = false
+python-versions = "*"
+version = "0.6"
+
+[[package]]
+category = "main"
+description = "A platform independent file lock."
+name = "filelock"
+optional = false
+python-versions = "*"
+version = "3.0.12"
+
+[[package]]
+category = "main"
+description = "Clean single-source support for Python 3 and 2"
+name = "future"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+version = "0.18.2"
+
+[[package]]
+category = "main"
+description = "Internationalized Domain Names in Applications (IDNA)"
+name = "idna"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "2.10"
+
+[[package]]
+category = "main"
+description = "Lightweight pipelining: using Python functions as pipeline jobs."
+name = "joblib"
+optional = false
+python-versions = ">=3.6"
+version = "0.16.0"
+
+[[package]]
+category = "main"
+description = "NumPy is the fundamental package for array computing with Python."
+name = "numpy"
+optional = false
+python-versions = ">=3.6"
+version = "1.19.0"
+
+[[package]]
+category = "main"
+description = "Core utilities for Python packages"
+name = "packaging"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+version = "20.4"
+
+[package.dependencies]
+pyparsing = ">=2.0.2"
+six = "*"
+
+[[package]]
+category = "main"
+description = "Python parsing module"
+name = "pyparsing"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
+version = "2.4.7"
+
+[[package]]
+category = "main"
+description = "Alternative regular expression module, to replace re."
+name = "regex"
+optional = false
+python-versions = "*"
+version = "2020.6.8"
+
+[[package]]
+category = "main"
+description = "Python HTTP for Humans."
+name = "requests"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+version = "2.24.0"
+
+[package.dependencies]
+certifi = ">=2017.4.17"
+chardet = ">=3.0.2,<4"
+idna = ">=2.5,<3"
+urllib3 = ">=1.21.1,<1.25.0 || >1.25.0,<1.25.1 || >1.25.1,<1.26"
+
+[[package]]
+category = "main"
+description = "SacreMoses"
+name = "sacremoses"
+optional = false
+python-versions = "*"
+version = "0.0.43"
+
+[package.dependencies]
+click = "*"
+joblib = "*"
+regex = "*"
+six = "*"
+tqdm = "*"
+
+[[package]]
+category = "main"
+description = "SentencePiece python wrapper"
+name = "sentencepiece"
+optional = false
+python-versions = "*"
+version = "0.1.92"
+
+[[package]]
+category = "main"
+description = "Python 2 and 3 compatibility utilities"
+name = "six"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*"
+version = "1.15.0"
+
+[[package]]
+category = "main"
+description = "Fast and Customizable Tokenizers"
+name = "tokenizers"
+optional = false
+python-versions = "*"
+version = "0.8.0rc4"
+
+[[package]]
+category = "main"
+description = "Tensors and Dynamic neural networks in Python with strong GPU acceleration"
+name = "torch"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.6.0"
+version = "1.5.1"
+
+[package.dependencies]
+future = "*"
+numpy = "*"
+
+[[package]]
+category = "main"
+description = "Fast, Extensible Progress Meter"
+name = "tqdm"
+optional = false
+python-versions = ">=2.6, !=3.0.*, !=3.1.*"
+version = "4.47.0"
+
+[[package]]
+category = "main"
+description = "State-of-the-art Natural Language Processing for TensorFlow 2.0 and PyTorch"
+name = "transformers"
+optional = false
+python-versions = ">=3.6.0"
+version = "3.0.0"
+
+[package.dependencies]
+filelock = "*"
+numpy = "*"
+packaging = "*"
+regex = "!=2019.12.17"
+requests = "*"
+sacremoses = "*"
+sentencepiece = "*"
+tokenizers = "0.8.0-rc4"
+tqdm = ">=4.27"
+
+[package.dependencies.dataclasses]
+python = "<3.7"
+version = "*"
+
+[[package]]
+category = "main"
+description = "A lightweight, object-oriented Python state machine implementation with many extensions."
+name = "transitions"
+optional = false
+python-versions = "*"
+version = "0.8.2"
+
+[package.dependencies]
+six = "*"
+
+[[package]]
+category = "main"
+description = "HTTP library with thread-safe connection pooling, file post, and more."
+name = "urllib3"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, <4"
+version = "1.25.9"
+
+[metadata]
+content-hash = "c5b114862c8405791ba84be978ff90c6891578a1a64b59fc04b15c74e48af4a6"
+python-versions = "^3.6.1"
+
+[metadata.hashes]
+certifi = ["5930595817496dd21bb8dc35dad090f1c2cd0adfaf21204bf6732ca5d8ee34d3", "8fc0819f1f30ba15bdb34cceffb9ef04d99f420f68eb75d901e9560b8749fc41"]
+chardet = ["84ab92ed1c4d4f16916e05906b6b75a6c0fb5db821cc65e70cbd64a3e2a5eaae", "fc323ffcaeaed0e0a02bf4d117757b98aed530d9ed4531e3e15460124c106691"]
+click = ["d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a", "dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc"]
+dataclasses = ["454a69d788c7fda44efd71e259be79577822f5e3f53f029a22d08004e951dc9f", "6988bd2b895eef432d562370bb707d540f32f7360ab13da45340101bc2307d84"]
+filelock = ["18d82244ee114f543149c66a6e0c14e9c4f8a1044b5cdaadd0f82159d6a6ff59", "929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"]
+future = ["b1bead90b70cf6ec3f0710ae53a525360fa360d306a86583adc6bf83a4db537d"]
+idna = ["b307872f855b18632ce0c21c5e45be78c0ea7ae4c15c828c20788b26921eb3f6", "b97d804b1e9b523befed77c48dacec60e6dcb0b5391d57af6a65a312a90648c0"]
+joblib = ["8f52bf24c64b608bf0b2563e0e47d6fcf516abc8cfafe10cfd98ad66d94f92d6", "d348c5d4ae31496b2aa060d6d9b787864dd204f9480baaa52d18850cb43e9f49"]
+numpy = ["13af0184177469192d80db9bd02619f6fa8b922f9f327e077d6f2a6acb1ce1c0", "26a45798ca2a4e168d00de75d4a524abf5907949231512f372b217ede3429e98", "26f509450db547e4dfa3ec739419b31edad646d21fb8d0ed0734188b35ff6b27", "30a59fb41bb6b8c465ab50d60a1b298d1cd7b85274e71f38af5a75d6c475d2d2", "33c623ef9ca5e19e05991f127c1be5aeb1ab5cdf30cb1c5cf3960752e58b599b", "356f96c9fbec59974a592452ab6a036cd6f180822a60b529a975c9467fcd5f23", "3c40c827d36c6d1c3cf413694d7dc843d50997ebffbc7c87d888a203ed6403a7", "4d054f013a1983551254e2379385e359884e5af105e3efe00418977d02f634a7", "63d971bb211ad3ca37b2adecdd5365f40f3b741a455beecba70fd0dde8b2a4cb", "658624a11f6e1c252b2cd170d94bf28c8f9410acab9f2fd4369e11e1cd4e1aaf", "76766cc80d6128750075378d3bb7812cf146415bd29b588616f72c943c00d598", "7b57f26e5e6ee2f14f960db46bd58ffdca25ca06dd997729b1b179fddd35f5a3", "7b852817800eb02e109ae4a9cef2beda8dd50d98b76b6cfb7b5c0099d27b52d4", "8cde829f14bd38f6da7b2954be0f2837043e8b8d7a9110ec5e318ae6bf706610", "a2e3a39f43f0ce95204beb8fe0831199542ccab1e0c6e486a0b4947256215632", "a86c962e211f37edd61d6e11bb4df7eddc4a519a38a856e20a6498c319efa6b0", "a8705c5073fe3fcc297fb8e0b31aa794e05af6a329e81b7ca4ffecab7f2b95ef", "b6aaeadf1e4866ca0fdf7bb4eed25e521ae21a7947c59f78154b24fc7abbe1dd", "be62aeff8f2f054eff7725f502f6228298891fd648dc2630e03e44bf63e8cee0", "c2edbb783c841e36ca0fa159f0ae97a88ce8137fb3a6cd82eae77349ba4b607b", "cbe326f6d364375a8e5a8ccb7e9cd73f4b2f6dc3b2ed205633a0db8243e2a96a", "d34fbb98ad0d6b563b95de852a284074514331e6b9da0a9fc894fb1cdae7a79e", "d97a86937cf9970453c3b62abb55a6475f173347b4cde7f8dcdb48c8e1b9952d", "dd53d7c4a69e766e4900f29db5872f5824a06827d594427cf1a4aa542818b796", "df1889701e2dfd8ba4dc9b1a010f0a60950077fb5242bb92c8b5c7f1a6f2668a", "fa1fe75b4a9e18b66ae7f0b122543c42debcf800aaafa0212aaff3ad273c2596"]
+packaging = ["4357f74f47b9c12db93624a82154e9b120fa8293699949152b22065d556079f8", "998416ba6962ae7fbd6596850b80e17859a5753ba17c32284f67bfff33784181"]
+pyparsing = ["c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1", "ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"]
+regex = ["08997a37b221a3e27d68ffb601e45abfb0093d39ee770e4257bd2f5115e8cb0a", "112e34adf95e45158c597feea65d06a8124898bdeac975c9087fe71b572bd938", "1700419d8a18c26ff396b3b06ace315b5f2a6e780dad387e4c48717a12a22c29", "2f6f211633ee8d3f7706953e9d3edc7ce63a1d6aad0be5dcee1ece127eea13ae", "52e1b4bef02f4040b2fd547357a170fc1146e60ab310cdbdd098db86e929b387", "55b4c25cbb3b29f8d5e63aeed27b49fa0f8476b0d4e1b3171d85db891938cc3a", "5aaa5928b039ae440d775acea11d01e42ff26e1561c0ffcd3d805750973c6baf", "654cb773b2792e50151f0e22be0f2b6e1c3a04c5328ff1d9d59c0398d37ef610", "690f858d9a94d903cf5cada62ce069b5d93b313d7d05456dbcd99420856562d9", "6ad8663c17db4c5ef438141f99e291c4d4edfeaacc0ce28b5bba2b0bf273d9b5", "89cda1a5d3e33ec9e231ece7307afc101b5217523d55ef4dc7fb2abd6de71ba3", "92d8a043a4241a710c1cf7593f5577fbb832cf6c3a00ff3fc1ff2052aff5dd89", "95fa7726d073c87141f7bbfb04c284901f8328e2d430eeb71b8ffdd5742a5ded", "97712e0d0af05febd8ab63d2ef0ab2d0cd9deddf4476f7aa153f76feef4b2754", "b2ba0f78b3ef375114856cbdaa30559914d081c416b431f2437f83ce4f8b7f2f", "bae83f2a56ab30d5353b47f9b2a33e4aac4de9401fb582b55c42b132a8ac3868", "c78e66a922de1c95a208e4ec02e2e5cf0bb83a36ceececc10a72841e53fbf2bd", "cf59bbf282b627130f5ba68b7fa3abdb96372b24b66bdf72a4920e8153fc7910", "e3cdc9423808f7e1bb9c2e0bdb1c9dc37b0607b30d646ff6faf0d4e41ee8fee3", "e9b64e609d37438f7d6e68c2546d2cb8062f3adb27e6336bc129b51be20773ac", "fbff901c54c22425a5b809b914a3bfaf4b9570eee0e5ce8186ac71eb2025191c"]
+requests = ["b3559a131db72c33ee969480840fff4bb6dd111de7dd27c8ee1f820f4f00231b", "fe75cc94a9443b9246fc7049224f75604b113c36acb93f87b80ed42c44cbb898"]
+sacremoses = ["123c1bf2664351fb05e16f87d3786dbe44a050cfd7b85161c09ad9a63a8e2948"]
+sentencepiece = ["040c91321e3ad1b468283a2518bdcddcd7eaed61072dbe65357f03551b2a33c4", "0ae4ff32626786d8c46823bdffce1098dcd5c8fdf0875000b9b95974301d8162", "21c23ebe3c7299bd3d2e09f68a669b28d3a2f652f67798176840b5a31f952667", "366cd4e01e723075786f0383d6b153965c09567ced96618dc2a3be2ca7353d5a", "3d6760dad64d228bbd655aee5063a379e05d348efb3914334110e813fb0db941", "3d8c36c21d4ed395f24b98e3289128448e23288b8f1a9242d5f33df13d16fd90", "5daf059b31ef82b52698f86891ed8376550d36a5b87a4a3590a94a255346ee08", "7755b14655e882fffeb4b76571bc6074d048727fb3b081b7605381edadcf9442", "7fd16c761339f593596b63e50810a2d2eff964d428ab79a49674c7371c055561", "8e314d06ff358881df0ee784f653d222c4ea551eb7fcac00c80b082d63810602", "9939d818053e0929edbb144f14487e2cd007a32445658aa0376673aefc87d6d3", "997bc09c70e9d6f8b880bffaf83900cf1dabf65afd0b4ea5461b4c813caaec40", "b36a8dfd4de5c65ed0712839985efa4ecd21b645d870db5c18823b29f6c9117a", "c46a687723433d2e933ecbe201d818c3b7a18d0e0043794ed750c3472391b0c7", "d15c0550b9e034ed7c43357abfbbe05e8c05e63116162ca9e2c4557b6dca2653", "d1a2d2d83e1e9b38f873fadef090c0d6c020f522bf7f256b92ffe5464e0d8ef9", "da5e5c29b4754da8cda52e72a1bfcfddd7d60bfe73bdf8e286650eacc205ac62", "de808a218b197e6105bacafe0008a1c76d5c5d9be3d10dc4c6d2974653f01034", "e6ab8b0b67b345581aa0b49c0fc58a8c7515eb4a27b9cc24d3cbfe2affbdd7e8", "e6e32647417084623b4d17ec2e16de4be112198be9536d760ade05fb53749a3b", "ef587b573700e77e6bd8e4d702e71129ec71171c712cd15bac351d5726d611fa", "f7a695e6bfc1a78dddacb0cbbbaba02a12da26ec1570cb91a9744fd46467a9fc", "fa9cb02572bc28dad2c53761678d314e194bd8d3a87a3eb545427915b5034c57", "fbb9060839c95799029f4ddf2154aa0fd2e73836e589b1c8ea02ece236252599"]
+six = ["30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259", "8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced"]
+tokenizers = ["032c6e3ce55671b2f0f12e40dab65de570f94b0cc9739f3adb506f43838574f5", "0977f3bac30457c514a3ac3e5bdaf585b36aec49d9a96954faeca1334805f1fd", "133a61fd6f5d1623fd21b7be857ca9a56ba18bd98c157895b3c1b3ac9df0df28", "1b42ccd463adf349ba00efd57d23e386cf23debb273ae7627da878c78b674d5d", "26d4be3e9c8e7ac1dce18204a4ffe9e3ea8ee43d450de6a9c643801bfa8df890", "2f648405b3b0a6ac26bab34fb0a2972454d8ce86bd2ad7191316460f2731eaee", "30311102f58cd67f891f1fc13f524a61ebb0d12287452b61e12a93d5252bc0bd", "4afaaf4d4c5d53dbd804397f11bc6b08e9d4bb9697b1348823c5a4f778344d37", "6724dffebec4434ef6e019f415c4b17394797f83da351c04b2dfc6ce9c348c59", "69764a5b533e14ee50046409c4fb30d1235b1c3224a7e22635042329efc0f9a3", "6e1b33603ed9df26c5a8af8029c70d2cbd5d622beb678af1babed1b00561280d", "70482161aad628c7830f42464369bbd36685d9ba2b8c8af54754309c84532a84", "73ffd4d3d3849f71977bfef03c920585cdd2f9f3aab3e173cfe9dfffb995e7f0", "81aa76ef12de4b7a57df03b03daeabf0e2ad937b9fc8f933ef532e4602414bd3", "a9fe335e52635cb423364f39e7f93c6bf32fbb1349e226db767c8e09cebc3bc1", "cb6785ea0dc8625a4bffe3d53bc8df94bdaad7e32f066db4a600f1bfef619cc5", "e1afc149b31148bb1372bfa7565d30a79e93c8075d02ec27198432433e8da866"]
+torch = ["0a83f41140222c7cc947aa29ed253f3e6fa490606d3d4acd02bfd9f338e3c707", "5d909a55cd979fec2c9a7aa35012024b9cc106acbc496faf5de798b148406450", "70046cf66eb40ead89df25b8dcc571c3007fc9849d4e1d254cc09b4b355374d4", "a358cee1d35b86757bf915e320ba776d39c20e60db50779060842efc86f02edd", "b84fd18fd8216b74a19828433c3beeb1f0d1d29f45dead3be9ed784ae6855966", "bb2a3e6c9c9dbfda856bd1b1a55d88789a9488b569ffba9cd6d9aa536ef866ba", "c42658f2982591dc4d0459645c9ab26e0ce18aa7ab0993c27c8bcb1c98931d11", "ff1dbeaa017bae66036e8e7a698a5475ac5a0d7b0a690f0a04ac3b1133b1feb3"]
+tqdm = ["63ef7a6d3eb39f80d6b36e4867566b3d8e5f1fe3d6cb50c5e9ede2b3198ba7b7", "7810e627bcf9d983a99d9ff8a0c09674400fd2927eddabeadf153c14a2ec8656"]
+transformers = ["679f0060e47e740f389f858adff2296d4a393015e5bbe7dac9143220b8caf7af", "b3c8409495d7a631a9884d82311ce132a5eaaa0b520ec52b4a838a17b0513210"]
+transitions = ["57ceb045d58e491e676efea306e9c475f112eeb563b6c103eae2ff9bc33759fb", "6ff7a3bfa4ac64b62993bb19dc2bb6a0ccbdf4e70b2cbae8350de6c916d77748"]
+urllib3 = ["3018294ebefce6572a474f0604c2021e33b3fd8006ecd11d62107a5d2a963527", "88206b0eb87e6d677d424843ac5209e3fb9d0190d0ee169599165ec25e9d9115"]
