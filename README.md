@@ -17,3 +17,6 @@ Main paper:
 ## Papers
 
 To-Do
+
+## Scheme of the game "Guess topic"
+![Self-editing Diagram](diogram_guess_topic_game.svg)
