@@ -16,7 +16,7 @@ def initialize_model_and_tokenizer(model_name: str, device: str):
     model_info = MODELS[model_name]
     model_class = model_info["model"]
     model_tokenizer = model_info["tokenizer"]
-    model = model_class.from_pretrained(**model_info["default_model_settings"])
+    model = model_class.from_pretrained(model_name, **model_info["default_model_settings"])
     model.to(device)
     model.eval()
     tokenizer = model_tokenizer.from_pretrained(model_name)
