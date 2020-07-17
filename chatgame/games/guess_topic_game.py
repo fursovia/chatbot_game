@@ -2,6 +2,7 @@ from transitions import Machine
 import random
 import typing as tp
 
+from chatgame.language_models.gpt2.gpt2 import run_pplm_example
 
 class GuessTopicGame:
     """
@@ -65,7 +66,8 @@ class GuessTopicGame:
         pass
 
     def receive_text_to_telegram(self):
-        pass
+        print("running pplm example")
+        run_pplm_example()
 
     def receive_topic_from_user(self) -> str:
         pass
