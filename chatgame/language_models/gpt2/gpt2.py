@@ -24,6 +24,7 @@ python examples/run_pplm.py -D sentiment --class_label 3 --cond_text "The lake" 
 
 import argparse
 import json
+from os import path
 
 from typing import List, Optional, Tuple, Union
 
@@ -63,7 +64,7 @@ VERBOSITY_LEVELS = {
 # Адреса с текстовыми файлами для BOW
 # TODO Сделать универсальные относительные пути
 BAG_OF_WORDS_ADDRESSES = {
-    "fantasy": "/home/andronov/chatbot_game/chatgame/bag_of_words/wordlists/fantasy.txt"
+    "fantasy": "../../bag_of_words/wordlists/fantasy.txt"
 }
 
 
@@ -98,6 +99,11 @@ def full_text_generation(
     """
 
     bow_indices = []
+
+    # Добавление универсального пути в BAG_OF_WORDS_ADDRESSES
+    directory = path.dirname(__file__)
+    for key in BAG_OF_WORDS_ADDRESSES.keys():
+        BAG_OF_WORDS_ADDRESSES[key] = path.join(directory, BAG_OF_WORDS_ADDRESSES[key])
 
     # Если указан --bag_of_words (напр. military), то читаем нужный файл со списком слов
     # и вовращаем список списков индексов токенов, полученных из этого мешка слов
