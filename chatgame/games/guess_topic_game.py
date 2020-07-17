@@ -47,6 +47,8 @@ class GuessTopicGame:
     def __init__(self, len_of_text=40):
 
         self.topics = []
+        self.unpert_gen_text = ''
+        self.pert_gen_texts = []
         self.random_chosen_topic = ''
         self.len_of_text = len_of_text
 
@@ -67,7 +69,9 @@ class GuessTopicGame:
 
     def receive_text_to_telegram(self):
         print("running pplm example")
-        run_pplm_example()
+        unpert_text, pert_texts = run_pplm_example(bag_of_words="fantasy")
+        self.unpert_gen_text = unpert_text
+        self.pert_gen_texts = pert_texts
 
     def receive_topic_from_user(self) -> str:
         pass
