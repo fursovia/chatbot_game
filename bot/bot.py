@@ -36,11 +36,12 @@ async def start_game(message: types.Message):
     game_class = GAMES[message.text]
     game = game_class()
     example_of_using_GuessTopicGame(game)
+    await bot.send_message(message.chat.id, game.pert_gen_texts[0])
 
     # old style:
     # await bot.send_message(message.chat.id, message.text)
 
-    await message.answer(message.text)
+    # await message.answer(message.text)
 
 
 if __name__ == '__main__':
