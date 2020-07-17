@@ -24,7 +24,7 @@ python examples/run_pplm.py -D sentiment --class_label 3 --cond_text "The lake" 
 
 import argparse
 import json
-from operator import add
+
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
@@ -40,7 +40,7 @@ from transformers.modeling_gpt2 import GPT2LMHeadModel
 from chatgame.utils.misc import decode_text_from_tokens, top_k_filter
 from chatgame.utils.model_loader import initialize_model_and_tokenizer, prepare_text_primer
 from chatgame.bag_of_words.bow_utils import build_bows_one_hot_vectors, get_bag_of_words_indices
-from chatgame.language_models.gpt2.text_generation import generate_unperturbed_text
+from chatgame.language_models.gpt2.text_generation import generate_unperturbed_text, generate_perturbed_text
 
 SMALL_CONST = 1e-15
 BIG_CONST = 1e10
@@ -76,7 +76,7 @@ def full_text_generation(
         bag_of_words=None,
         discrim=None,
         class_label=None,
-        length=100,
+        length=40,
         stepsize=0.02,
         temperature=1.0,
         top_k=10,
@@ -105,47 +105,48 @@ def full_text_generation(
         bow_indices = get_bag_of_words_indices(bag_of_words_ids_or_paths=bag_of_words.split(";"),
                                                tokenizer=tokenizer,
                                                bow_filepaths=BAG_OF_WORDS_ADDRESSES)
-
+    print(bow_indices)
     unpert_gen_tok_text = generate_unperturbed_text(
         model=model,
         context=context,
         length=length,
         sample=sample
     )
+    if device == 'cuda':
+        torch.cuda.empty_cache()
+
+    print("Unperturbed generated")
+    pert_gen_tok_texts = []
+
+    # Генерируем возмущенный текст столько раз, сколько требуется num_samples
+    for i in range(num_samples):
+        pert_gen_tok_text = generate_perturbed_text(
+            model=model,
+            tokenizer=tokenizer,
+            context=context,
+            device=device,
+            perturb=True,
+            bow_indices=bow_indices,
+            length=length,
+            loss_type=1,
+            stepsize=stepsize,
+            temperature=temperature,
+            top_k=top_k,
+            sample=sample,
+            num_iterations=num_iterations,
+            grad_length=grad_length,
+            horizon_length=horizon_length,
+            window_length=window_length,
+            decay=decay,
+            gamma=gamma,
+            gm_scale=gm_scale,
+            kl_scale=kl_scale
+        )
+        pert_gen_tok_texts.append(pert_gen_tok_text)
+
     # if device == 'cuda':
     #     torch.cuda.empty_cache()
-    #
-    # pert_gen_tok_texts = []
-    #
-    # # Генерируем возмущенный текст столько раз, сколько требуется num_samples
-    # for i in range(num_samples):
-    #     pert_gen_tok_text = generate_text_pplm(
-    #         model=model,
-    #         tokenizer=tokenizer,
-    #         context=context,
-    #         device=device,
-    #         perturb=True,
-    #         bow_indices=bow_indices,
-    #         length=length,
-    #         stepsize=stepsize,
-    #         temperature=temperature,
-    #         top_k=top_k,
-    #         sample=sample,
-    #         num_iterations=num_iterations,
-    #         grad_length=grad_length,
-    #         horizon_length=horizon_length,
-    #         window_length=window_length,
-    #         decay=decay,
-    #         gamma=gamma,
-    #         gm_scale=gm_scale,
-    #         kl_scale=kl_scale,
-    #         verbosity_level=verbosity_level
-    #     )
-    #     pert_gen_tok_texts.append(pert_gen_tok_text)
-    #
-    # if device == 'cuda':
-    #     torch.cuda.empty_cache()
-    pert_gen_tok_texts = None
+
     return unpert_gen_tok_text, pert_gen_tok_texts
 
 
@@ -361,11 +362,11 @@ def full_text_generation(
 def run_pplm_example(
         pretrained_model="gpt2-medium",
         cond_text="",
-        num_samples=40,
+        num_samples=1,
         bag_of_words=None,
         discrim=None,
         class_label=-1,
-        length=100,
+        length=40,
         stepsize=0.02,
         temperature=1.0,
         top_k=10,
@@ -398,6 +399,7 @@ def run_pplm_example(
     # full_text_generation returns:
     # unpert_gen_tok_text, pert_gen_tok_texts
 
+    print("Generating texts")
     unpert_gen_tok_text, pert_gen_tok_texts = full_text_generation(
         model=model,
         tokenizer=tokenizer,
@@ -433,11 +435,15 @@ def run_pplm_example(
 
     # Для каждого из num_samples возмущенных текстов:
 
-    # for i, pert_gen_tok_text in enumerate(pert_gen_tok_texts):
-    #     decoded_gen_text = decode_text_from_tokens(tokenizer=tokenizer,
-    #                                                tokens=pert_gen_tok_text)
-    #
-    #     print(decoded_gen_text)
+    pert_gen_texts = []
+    for i, pert_gen_tok_text in enumerate(pert_gen_tok_texts):
+        decoded_gen_text = decode_text_from_tokens(tokenizer=tokenizer,
+                                                   tokens=pert_gen_tok_text)
+
+        print(decoded_gen_text)
+        pert_gen_texts.append(decoded_gen_text)
+
+    return unpert_gen_text, pert_gen_texts
 
 
 if __name__ == '__main__':
