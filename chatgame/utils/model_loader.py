@@ -12,6 +12,7 @@ MODELS = {
 }
 
 
+# TODO Модели очень долго загружаются. Можно ли как-то это ускорить? Закэшировать их или что-то вроде?
 def initialize_model_and_tokenizer(model_name: str, device: str):
     model_info = MODELS[model_name]
     model_class = model_info["model"]
@@ -26,7 +27,6 @@ def initialize_model_and_tokenizer(model_name: str, device: str):
 
 
 def prepare_text_primer(tokenizer, cond_text, device, debug_print=False):
-
     # Токенизируем строку
     if cond_text:
         tokenized_cond_text = tokenizer.encode(
