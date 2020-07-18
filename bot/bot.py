@@ -26,11 +26,12 @@ async def greetings(message: types.Message):
 
     choose_games_keyboard = types.InlineKeyboardMarkup(resize_keyboard=True,
                                                        one_time_keyboard=True)
-
-    button_guess_topic_game = types.InlineKeyboardButton('Guess topic', callback_data='1')
+    button_guess_topic_game = types.InlineKeyboardButton('Guess topic',
+                                                         callback_data='1')
     choose_games_keyboard.add(button_guess_topic_game)
 
-    await message.reply("Hi!\nWhat game shall we play?", reply_markup=choose_games_keyboard)
+    await message.reply("Hi!\nWhat game shall we play?",
+                        reply_markup=choose_games_keyboard)
 
 
 @dp.callback_query_handler()
@@ -43,7 +44,9 @@ async def start_game(callback_query: types.CallbackQuery):
     """
     code_of_game = callback_query.data[-1]
 
-    await bot.send_message(callback_query.from_user.id, 'You choose {} game!'.format(GAMES_NAMES[code_of_game]))
+    await callback_query.message.reply('You choose {} game!'.format(GAMES_NAMES[code_of_game]),
+                                       reply=False)
+
     # Скрываем кнопки после выбора игры
     await bot.edit_message_reply_markup(chat_id=callback_query.message.chat.id,
                                         message_id=callback_query.message.message_id)
@@ -52,7 +55,8 @@ async def start_game(callback_query: types.CallbackQuery):
     game = game_class()
     example_of_using_GuessTopicGame(game)
 
-    await bot.send_message(callback_query.message.chat.id, game.pert_gen_texts[0])
+    await callback_query.message.reply(game.pert_gen_texts[0],
+                                       reply=False)
 
     # old style:
     # await bot.send_message(message.chat.id, message.text)
@@ -61,4 +65,5 @@ async def start_game(callback_query: types.CallbackQuery):
 
 
 if __name__ == '__main__':
-    executor.start_polling(dp, skip_updates=True)
+    executor.start_polling(dp,
+                           skip_updates=True)
