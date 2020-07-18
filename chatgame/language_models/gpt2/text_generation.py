@@ -4,7 +4,8 @@ from numpy import zeros as np_zeros
 import torch
 import torch.nn.functional as F
 from chatgame.bag_of_words.bow_utils import build_bows_one_hot_vectors
-from chatgame.utils.misc import top_k_filter
+from chatgame.utils.misc import top_k_filter, mask_for_gradients
+from chatgame.utils.losses import bag_of_words_loss, discriminator_loss, kullback_leibler_loss
 
 SMALL_CONST = 1e-15
 
@@ -159,7 +160,7 @@ def generate_perturbed_text(
 
             # Если у нас есть невозмущенное состояние сети, возмущаем его
             if past is not None:
-                pert_past, _, grad_norms, loss_this_iter = perturb_past(
+                pert_past, _, grad_norms, loss_this_iter = perturb_past_gpt2(
                     past,
                     model,
                     last,
@@ -243,7 +244,7 @@ def generate_perturbed_text(
     return output_so_far
 
 
-def perturb_past(
+def perturb_past_gpt2(
         past,  # tuple[tensor]
         model,
         last,  # [[int]] - tensor
@@ -293,42 +294,17 @@ def perturb_past(
     else:
         decay_mask = 1.0
 
-    # TODO fix this comment (SUMANTH)
-    # Generate a mask is gradient perturbated is based on a past window
     _, _, _, curr_length, _ = past[0].shape
 
     # Собираем тензор-маску, которая пригодится при вычислении нормы градиента
     if curr_length > window_length > 0:
 
-        # Форма как у тензоров в past, только на месте измерения, которое отвечало за длину послед-ти,
-        # здесь стоит window_length
-        ones_key_val_shape = (
-                tuple(past[0].shape[:-2])
-                + tuple([window_length])
-                + tuple(past[0].shape[-1:])
-        )
-
-        # Форма как у тензоров в past, только на месте измерения, которое отвечало за длину послед-ти,
-        # здесь стоит разница между текущей длиной послед-ти и window_length (curr_length > window_length) здесь
-        zeros_key_val_shape = (
-                tuple(past[0].shape[:-2])
-                + tuple([curr_length - window_length])
-                + tuple(past[0].shape[-1:])
-        )
-
-        ones_mask = torch.ones(ones_key_val_shape)
-        ones_mask = decay_mask * ones_mask.permute(0, 1, 2, 4, 3)
-        # permute переставляет измерения тензора местами, это аналог транспонирования для тензоров
-        ones_mask = ones_mask.permute(0, 1, 2, 4, 3)
-
-        # Полученная маска будет умножаться на градиенты past, чтобы занулить значения, относящиеся к
-        # дальним словам
-        window_mask = torch.cat(
-            (ones_mask, torch.zeros(zeros_key_val_shape)),
-            dim=-2
-        ).to(device)
+        window_mask = mask_for_gradients(curr_length,
+                                         window_length,
+                                         past,
+                                         decay_mask).to(device)
     else:
-        # Если текущая длина послед-ти слишком мала, то маска состоит из одинх единиц и не
+        # Если текущая длина послед-ти слишком мала, то маска состоит из одних единиц и не
         # играет роли.
         window_mask = torch.ones_like(past[0]).to(device)
 
@@ -337,7 +313,7 @@ def perturb_past(
     new_accumulated_hidden = None
     # Получаем финальный Delta{H_t} в несколько итераций
     for i in range(num_iterations):
-        # Превращаем нампаевский тензор градиентов в Variable, требующий градиент
+        # Превращаем нампаевский тензор градиентов в торчевский, требующий автоградиент
         curr_perturbation = [
             torch.tensor(p_, requires_grad=True, device=device)
             for p_ in grad_accumulator
@@ -372,39 +348,23 @@ def perturb_past(
 
         # Для метода мешка слов
         if loss_type == PPLM_BOW or loss_type == PPLM_BOW_DISCRIM:
-            # Это цикл длины один
+            # Это цикл такой длины, сколько тем требуется соблюдать одновременно
             for one_hot_bow in one_hot_bows_vectors:
-                # Получаем вектор с вероятностями для всех токенов в мешке слов
-                bow_probs = torch.mm(probs, torch.t(one_hot_bow))  # (1, 50257) * (18, 50257).T = (1, 18)
-                # Используем минус логарифм суммы вероятностей как лосс
-                bow_loss = -torch.log(torch.sum(bow_probs))
+                bow_loss = bag_of_words_loss(probs, one_hot_bow)
                 loss += bow_loss
                 loss_list.append(bow_loss)
 
         # Для метода дискриминаторов
         if loss_type == PPLM_DISCRIM or loss_type == PPLM_BOW_DISCRIM:
-            ce_loss = torch.nn.CrossEntropyLoss()
-            # TODO why we need to do this assignment and not just using unpert_past? (Sumanth)
-            curr_unpert_past = unpert_past
-            curr_probs = torch.unsqueeze(probs, dim=1)
-            wte = model.resize_token_embeddings()
-            for _ in range(horizon_length):
-                inputs_embeds = torch.matmul(curr_probs, wte.weight.data)
-                _, curr_unpert_past, curr_all_hidden = model(
-                    past=curr_unpert_past,
-                    inputs_embeds=inputs_embeds
-                )
-                curr_hidden = curr_all_hidden[-1]
-                new_accumulated_hidden = new_accumulated_hidden + torch.sum(
-                    curr_hidden, dim=1)
-
-            prediction = classifier(new_accumulated_hidden /
-                                    (curr_length + 1 + horizon_length))
-
-            label = torch.tensor(prediction.shape[0] * [class_label],
-                                 device=device,
-                                 dtype=torch.long)
-            discrim_loss = ce_loss(prediction, label)
+            discrim_loss = discriminator_loss(model,
+                                              classifier,
+                                              probs,
+                                              horizon_length,
+                                              unpert_past,
+                                              accum_hidden=new_accumulated_hidden,
+                                              curr_length=curr_length,
+                                              device=device,
+                                              class_label=class_label)
             loss += discrim_loss
             loss_list.append(discrim_loss)
 
@@ -425,9 +385,7 @@ def perturb_past(
 
             # Рассчитываем расхождение Кульбака-Лейблера по соответствующей формуле,
             # берем с коэффициентом kl_scale
-            kl_loss = kl_scale * (
-                (corrected_probs * (corrected_probs / unpert_probs).log()).sum()
-            )
+            kl_loss = kullback_leibler_loss(corrected_probs, unpert_probs, kl_scale)
             loss += kl_loss
 
         loss_per_iter.append(loss.data.cpu().numpy())
