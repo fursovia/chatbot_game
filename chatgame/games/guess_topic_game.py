@@ -3,6 +3,8 @@ import random
 import typing as tp
 
 from chatgame.language_models.gpt2.gpt2 import run_pplm_example
+from chatgame.language_models.gpt2.gpt2 import BAG_OF_WORDS_ADDRESSES
+
 
 class GuessTopicGame:
     """
@@ -58,7 +60,7 @@ class GuessTopicGame:
                             transitions=GuessTopicGame.transitions)
 
     def request_topics_from_clf(self):
-        self.topics = ['religion', 'politics']
+        self.topics = list(BAG_OF_WORDS_ADDRESSES.keys())
 
     def choose_topic(self):
         if self.topics:
@@ -69,7 +71,7 @@ class GuessTopicGame:
 
     def receive_text_to_telegram(self):
         print("running pplm example")
-        unpert_text, pert_texts = run_pplm_example(bag_of_words="fantasy")
+        unpert_text, pert_texts = run_pplm_example(bag_of_words=self.random_chosen_topic)
         self.unpert_gen_text = unpert_text
         self.pert_gen_texts = pert_texts
 

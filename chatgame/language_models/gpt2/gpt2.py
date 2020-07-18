@@ -64,7 +64,9 @@ VERBOSITY_LEVELS = {
 # Адреса с текстовыми файлами для BOW
 # TODO Сделать универсальные относительные пути
 BAG_OF_WORDS_ADDRESSES = {
-    "fantasy": "../../bag_of_words/wordlists/fantasy.txt"
+    "fantasy": "fantasy.txt",
+    "politics": "politics.txt",
+    "military": "military.txt"
 }
 
 
@@ -103,7 +105,9 @@ def full_text_generation(
     # Добавление универсального пути в BAG_OF_WORDS_ADDRESSES
     directory = path.dirname(__file__)
     for key in BAG_OF_WORDS_ADDRESSES.keys():
-        BAG_OF_WORDS_ADDRESSES[key] = path.join(directory, BAG_OF_WORDS_ADDRESSES[key])
+        BAG_OF_WORDS_ADDRESSES[key] = path.join(directory,
+                                                '../../bag_of_words/wordlists',
+                                                BAG_OF_WORDS_ADDRESSES[key])
 
     # Если указан --bag_of_words (напр. military), то читаем нужный файл со списком слов
     # и вовращаем список списков индексов токенов, полученных из этого мешка слов
