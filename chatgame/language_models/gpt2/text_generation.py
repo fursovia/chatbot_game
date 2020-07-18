@@ -5,7 +5,7 @@ import torch
 import torch.nn.functional as F
 from chatgame.bag_of_words.bow_utils import build_bows_one_hot_vectors
 from chatgame.utils.misc import top_k_filter, mask_for_gradients
-from chatgame.utils.losses import bag_of_words_loss, discriminator_loss, kullback_leibler_loss
+from chatgame.utils.losses import compute_bow_loss, compute_discriminator_loss, compute_kl_loss
 
 SMALL_CONST = 1e-15
 
@@ -350,21 +350,21 @@ def perturb_past_gpt2(
         if loss_type == PPLM_BOW or loss_type == PPLM_BOW_DISCRIM:
             # Это цикл такой длины, сколько тем требуется соблюдать одновременно
             for one_hot_bow in one_hot_bows_vectors:
-                bow_loss = bag_of_words_loss(probs, one_hot_bow)
+                bow_loss = compute_bow_loss(probs, one_hot_bow)
                 loss += bow_loss
                 loss_list.append(bow_loss)
 
         # Для метода дискриминаторов
         if loss_type == PPLM_DISCRIM or loss_type == PPLM_BOW_DISCRIM:
-            discrim_loss = discriminator_loss(model,
-                                              classifier,
-                                              probs,
-                                              horizon_length,
-                                              unpert_past,
-                                              accum_hidden=new_accumulated_hidden,
-                                              curr_length=curr_length,
-                                              device=device,
-                                              class_label=class_label)
+            discrim_loss = compute_discriminator_loss(model,
+                                                      classifier,
+                                                      probs,
+                                                      horizon_length,
+                                                      unpert_past,
+                                                      accum_hidden=new_accumulated_hidden,
+                                                      cur_length=curr_length,
+                                                      device=device,
+                                                      class_label=class_label)
             loss += discrim_loss
             loss_list.append(discrim_loss)
 
@@ -385,7 +385,7 @@ def perturb_past_gpt2(
 
             # Рассчитываем расхождение Кульбака-Лейблера по соответствующей формуле,
             # берем с коэффициентом kl_scale
-            kl_loss = kullback_leibler_loss(corrected_probs, unpert_probs, kl_scale)
+            kl_loss = compute_kl_loss(corrected_probs, unpert_probs, kl_scale)
             loss += kl_loss
 
         loss_per_iter.append(loss.data.cpu().numpy())
