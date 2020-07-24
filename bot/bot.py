@@ -58,8 +58,11 @@ async def start_game(callback_query: types.CallbackQuery):
                                        reply=False)
 
     game_class = GAMES[code_of_game]
+
+    # TODO Здесь надо принять от пользователя затравку для текста, если игра это предполагает
+
     game = game_class()
-    example_of_using_GuessTopicGame(game)
+    game.run()
 
     await callback_query.message.reply(game.pert_gen_texts[0],
                                        reply=False)
