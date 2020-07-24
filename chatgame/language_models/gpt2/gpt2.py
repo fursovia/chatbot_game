@@ -23,24 +23,17 @@ python examples/run_pplm.py -D sentiment --class_label 3 --cond_text "The lake" 
 """
 
 import argparse
-import json
 from os import path
 
 from typing import List, Optional, Tuple, Union
 
 import numpy as np
 import torch
-import torch.nn.functional as F
-from torch.autograd import Variable
-from tqdm import trange
-from transformers import GPT2Tokenizer
-from transformers.file_utils import cached_path
-from transformers.modeling_gpt2 import GPT2LMHeadModel
 
 # from pplm_classification_head import ClassificationHead
-from chatgame.utils.misc import decode_text_from_tokens, top_k_filter
+from chatgame.utils.misc import decode_text_from_tokens
 from chatgame.utils.model_loader import initialize_model_and_tokenizer, prepare_text_primer
-from chatgame.bag_of_words.bow_utils import build_bows_one_hot_vectors, get_bag_of_words_indices
+from chatgame.bag_of_words.bow_utils import get_bag_of_words_indices
 from chatgame.language_models.gpt2.text_generation import generate_unperturbed_text, generate_perturbed_text
 
 SMALL_CONST = 1e-15
@@ -62,7 +55,6 @@ VERBOSITY_LEVELS = {
 }
 
 # Адреса с текстовыми файлами для BOW
-# TODO Сделать универсальные относительные пути
 BAG_OF_WORDS_ADDRESSES = {
     "fantasy": "fantasy.txt",
     "politics": "politics.txt",
@@ -74,31 +66,18 @@ def full_text_generation(
         model,
         tokenizer,
         context=None,
-        num_samples=1,
         device="cuda",
         bag_of_words=None,
         discrim=None,
         class_label=None,
-        length=40,
-        stepsize=0.02,
-        temperature=1.0,
-        top_k=10,
-        sample=True,
-        num_iterations=3,
-        grad_length=10000,
-        horizon_length=1,
-        window_length=0,
-        decay=False,
-        gamma=1.5,
-        gm_scale=0.9,
-        kl_scale=0.01,
-        verbosity_level=REGULAR,
         **kwargs
+
 ):
     """
     Загружает нужный мешок слов и/или нужный дискриминатор, исходя из переданного в аргументы
     командной строки. Генерирует невозмущенный текст и указанное количество возмущенных текстов.
     """
+    print("INSIDE FULL TEXT GENERATION")
 
     bow_indices = []
 
@@ -109,56 +88,40 @@ def full_text_generation(
                                                 '../../bag_of_words/wordlists',
                                                 BAG_OF_WORDS_ADDRESSES[key])
 
-    # Если указан --bag_of_words (напр. military), то читаем нужный файл со списком слов
+    # Если указан bag_of_words (напр. military), то читаем нужный файл со списком слов
     # и вовращаем список списков индексов токенов, полученных из этого мешка слов
     if bag_of_words:
         bow_indices = get_bag_of_words_indices(bag_of_words_ids_or_paths=bag_of_words.split(";"),
                                                tokenizer=tokenizer,
                                                bow_filepaths=BAG_OF_WORDS_ADDRESSES)
-    print(bow_indices)
-    unpert_gen_tok_text = generate_unperturbed_text(
-        model=model,
-        context=context,
-        length=length,
-        sample=sample
-    )
-    if device == 'cuda':
-        torch.cuda.empty_cache()
-
-    print("Unperturbed generated")
+    # unpert_gen_tok_text = generate_unperturbed_text(
+    #     model=model,
+    #     context=context,
+    #     length=length,
+    #     sample=sample
+    # )
+    # if device == 'cuda':
+    #     torch.cuda.empty_cache()
+    #
+    # print("Unperturbed generated")
     pert_gen_tok_texts = []
 
     # Генерируем возмущенный текст столько раз, сколько требуется num_samples
-    for i in range(num_samples):
+    for i in range(kwargs.pop("num_samples")):
         pert_gen_tok_text = generate_perturbed_text(
             model=model,
             tokenizer=tokenizer,
             context=context,
             device=device,
-            perturb=True,
             bow_indices=bow_indices,
-            length=length,
-            loss_type=1,
-            stepsize=stepsize,
-            temperature=temperature,
-            top_k=top_k,
-            sample=sample,
-            num_iterations=num_iterations,
-            grad_length=grad_length,
-            horizon_length=horizon_length,
-            window_length=window_length,
-            decay=decay,
-            gamma=gamma,
-            gm_scale=gm_scale,
-            kl_scale=kl_scale
+            **kwargs
         )
         pert_gen_tok_texts.append(pert_gen_tok_text)
 
-    # if device == 'cuda':
-    #     torch.cuda.empty_cache()
+    if device == 'cuda':
+        torch.cuda.empty_cache()
 
-    return unpert_gen_tok_text, pert_gen_tok_texts
-
+    return pert_gen_tok_texts
 
 # def generate_text_pplm(
 #         model,
@@ -369,179 +332,181 @@ def full_text_generation(
 #     return output_so_far, unpert_discrim_loss, loss_in_time
 
 
-def run_pplm_example(
-        pretrained_model="gpt2-medium",
-        cond_text="",
-        num_samples=1,
-        bag_of_words=None,
-        discrim=None,
-        class_label=-1,
-        length=40,
-        stepsize=0.02,
-        temperature=1.0,
-        top_k=10,
-        sample=True,
-        num_iterations=3,
-        grad_length=10000,
-        horizon_length=1,
-        window_length=0,
-        decay=False,
-        gamma=1.5,
-        gm_scale=0.9,
-        kl_scale=0.01,
-        seed=0,
-        no_cuda=False,
-):
-    # set Random seed
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+# def run_pplm_example(
+#         pretrained_model="gpt2-medium",
+#         seed=0,
+#         no_cuda=False,
+#         cond_text="",
+#         length=40,
+#         # ===================
+#         bag_of_words=None,
+#         discrim=None,
+#         class_label=-1,
+#         horizon_length=1,
+#         # ===================
+#         num_samples=1,
+#         temperature=1.0,
+#         top_k=10,
+#         sample=True,
+#         # ===================
+#         stepsize=0.02,
+#         num_iterations=3,
+#         grad_length=10000,
+#         window_length=0,
+#         decay=False,
+#         gamma=1.5,
+#         gm_scale=0.9,
+#         kl_scale=0.01
+# ):
+#     # set Random seed
+#     # torch.manual_seed(seed)
+#     # np.random.seed(seed)
+#
+#     # set the device
+#     # DEVICE = "cuda" if torch.cuda.is_available() and not no_cuda else "cpu"
+#
+#     # model, tokenizer = initialize_model_and_tokenizer(model_name=pretrained_model,
+#     #                                                   device=DEVICE)
+#
+#     # context = prepare_text_primer(tokenizer=tokenizer, cond_text=cond_text, device=DEVICE)
+#
+#     # Генерируем один невозмущенный текст и num_samples возмущенных текстов
+#
+#     # full_text_generation returns:
+#     # unpert_gen_tok_text, pert_gen_tok_texts
+#
+#     unpert_gen_tok_text, pert_gen_tok_texts = full_text_generation(
+#         model=model,
+#         tokenizer=tokenizer,
+#         context=context,
+#         device=DEVICE,
+#         num_samples=num_samples,
+#         bag_of_words=bag_of_words,
+#         discrim=discrim,
+#         class_label=class_label,
+#         length=length,
+#         stepsize=stepsize,
+#         temperature=temperature,
+#         top_k=top_k,
+#         sample=sample,
+#         num_iterations=num_iterations,
+#         grad_length=grad_length,
+#         horizon_length=horizon_length,
+#         window_length=window_length,
+#         decay=decay,
+#         gamma=gamma,
+#         gm_scale=gm_scale,
+#         kl_scale=kl_scale,
+#     )
+#
+#     # Декодируем последовательность невозмущенной модели
+#     # Получаем строку со всеми сгенерированными словами
+#     # unpert_gen_text = decode_text_from_tokens(tokenizer=tokenizer,
+#     #                                           tokens=unpert_gen_tok_text)
+#     #
+#     # print("= Unperturbed generated text =")
+#     # print(unpert_gen_text)
+#     # print()
+#
+#     # Для каждого из num_samples возмущенных текстов:
+#
+#     # pert_gen_texts = []
+#     # for i, pert_gen_tok_text in enumerate(pert_gen_tok_texts):
+#     #     decoded_gen_text = decode_text_from_tokens(tokenizer=tokenizer,
+#     #                                                tokens=pert_gen_tok_text)
+#     #
+#     #     print(decoded_gen_text)
+#     #     pert_gen_texts.append(decoded_gen_text)
+#
+#     # return unpert_gen_text, pert_gen_texts
 
-    # set the device
-    DEVICE = "cuda" if torch.cuda.is_available() and not no_cuda else "cpu"
 
-    model, tokenizer = initialize_model_and_tokenizer(model_name=pretrained_model,
-                                                      device=DEVICE)
-
-    context = prepare_text_primer(tokenizer=tokenizer, cond_text=cond_text, device=DEVICE)
-
-    # Генерируем один невозмущенный текст и num_samples возмущенных текстов
-
-    # full_text_generation returns:
-    # unpert_gen_tok_text, pert_gen_tok_texts
-
-    print("Generating texts")
-    unpert_gen_tok_text, pert_gen_tok_texts = full_text_generation(
-        model=model,
-        tokenizer=tokenizer,
-        context=context,
-        device=DEVICE,
-        num_samples=num_samples,
-        bag_of_words=bag_of_words,
-        discrim=discrim,
-        class_label=class_label,
-        length=length,
-        stepsize=stepsize,
-        temperature=temperature,
-        top_k=top_k,
-        sample=sample,
-        num_iterations=num_iterations,
-        grad_length=grad_length,
-        horizon_length=horizon_length,
-        window_length=window_length,
-        decay=decay,
-        gamma=gamma,
-        gm_scale=gm_scale,
-        kl_scale=kl_scale,
-    )
-
-    # Декодируем последовательность невозмущенной модели
-    # Получаем строку со всеми сгенерированными словами
-    unpert_gen_text = decode_text_from_tokens(tokenizer=tokenizer,
-                                              tokens=unpert_gen_tok_text)
-
-    print("= Unperturbed generated text =")
-    print(unpert_gen_text)
-    print()
-
-    # Для каждого из num_samples возмущенных текстов:
-
-    pert_gen_texts = []
-    for i, pert_gen_tok_text in enumerate(pert_gen_tok_texts):
-        decoded_gen_text = decode_text_from_tokens(tokenizer=tokenizer,
-                                                   tokens=pert_gen_tok_text)
-
-        print(decoded_gen_text)
-        pert_gen_texts.append(decoded_gen_text)
-
-    return unpert_gen_text, pert_gen_texts
-
-
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--pretrained_model",
-        "-M",
-        type=str,
-        default="gpt2-medium",
-        help="pretrained model name or path to local checkpoint",
-    )
-    parser.add_argument(
-        "--cond_text", type=str, default="The lake",
-        help="Prefix texts to condition on"
-    )
-    parser.add_argument(
-        "--uncond", action="store_true",
-        help="Generate from end-of-text as prefix"
-    )
-    parser.add_argument(
-        "--num_samples",
-        type=int,
-        default=1,
-        help="Number of samples to generate from the modified latents",
-    )
-    parser.add_argument(
-        "--bag_of_words",
-        "-B",
-        type=str,
-        default=None,
-        help="Bags of words used for PPLM-BoW. "
-             "Either a BOW id (see list in code) or a filepath. "
-             "Multiple BoWs separated by ;",
-    )
-    parser.add_argument(
-        "--discrim",
-        "-D",
-        type=str,
-        default=None,
-        choices=("clickbait", "sentiment", "toxicity", "generic"),
-        help="Discriminator to use",
-    )
-    parser.add_argument('--discrim_weights', type=str, default=None,
-                        help='Weights for the generic discriminator')
-    parser.add_argument('--discrim_meta', type=str, default=None,
-                        help='Meta information for the generic discriminator')
-    parser.add_argument(
-        "--class_label",
-        type=int,
-        default=-1,
-        help="Class label used for the discriminator",
-    )
-    parser.add_argument("--length", type=int, default=100)
-    parser.add_argument("--stepsize", type=float, default=0.02)
-    parser.add_argument("--temperature", type=float, default=1.0)
-    parser.add_argument("--top_k", type=int, default=10)
-    parser.add_argument(
-        "--sample", action="store_true",
-        help="Generate from end-of-text as prefix"
-    )
-    parser.add_argument("--num_iterations", type=int, default=3)
-    parser.add_argument("--grad_length", type=int, default=10000)
-    parser.add_argument(
-        "--window_length",
-        type=int,
-        default=0,
-        help="Length of past which is being optimized; "
-             "0 corresponds to infinite window length",
-    )
-    parser.add_argument(
-        "--horizon_length",
-        type=int,
-        default=1,
-        help="Length of future to optimize over",
-    )
-    parser.add_argument("--decay", action="store_true",
-                        help="whether to decay or not")
-    parser.add_argument("--gamma", type=float, default=1.5)
-    parser.add_argument("--gm_scale", type=float, default=0.9)
-    parser.add_argument("--kl_scale", type=float, default=0.01)
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--no_cuda", action="store_true", help="no cuda")
-    parser.add_argument("--colorama", action="store_true",
-                        help="colors keywords")
-    parser.add_argument("--verbosity", type=str, default="very_verbose",
-                        choices=(
-                            "quiet", "regular", "verbose", "very_verbose"),
-                        help="verbosiry level")
-
-    args = parser.parse_args()
-    run_pplm_example(**vars(args))
+# if __name__ == '__main__':
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument(
+#         "--pretrained_model",
+#         "-M",
+#         type=str,
+#         default="gpt2-medium",
+#         help="pretrained model name or path to local checkpoint",
+#     )
+#     parser.add_argument(
+#         "--cond_text", type=str, default="The lake",
+#         help="Prefix texts to condition on"
+#     )
+#     parser.add_argument(
+#         "--uncond", action="store_true",
+#         help="Generate from end-of-text as prefix"
+#     )
+#     parser.add_argument(
+#         "--num_samples",
+#         type=int,
+#         default=1,
+#         help="Number of samples to generate from the modified latents",
+#     )
+#     parser.add_argument(
+#         "--bag_of_words",
+#         "-B",
+#         type=str,
+#         default=None,
+#         help="Bags of words used for PPLM-BoW. "
+#              "Either a BOW id (see list in code) or a filepath. "
+#              "Multiple BoWs separated by ;",
+#     )
+#     parser.add_argument(
+#         "--discrim",
+#         "-D",
+#         type=str,
+#         default=None,
+#         choices=("clickbait", "sentiment", "toxicity", "generic"),
+#         help="Discriminator to use",
+#     )
+#     parser.add_argument('--discrim_weights', type=str, default=None,
+#                         help='Weights for the generic discriminator')
+#     parser.add_argument('--discrim_meta', type=str, default=None,
+#                         help='Meta information for the generic discriminator')
+#     parser.add_argument(
+#         "--class_label",
+#         type=int,
+#         default=-1,
+#         help="Class label used for the discriminator",
+#     )
+#     parser.add_argument("--length", type=int, default=100)
+#     parser.add_argument("--stepsize", type=float, default=0.02)
+#     parser.add_argument("--temperature", type=float, default=1.0)
+#     parser.add_argument("--top_k", type=int, default=10)
+#     parser.add_argument(
+#         "--sample", action="store_true",
+#         help="Generate from end-of-text as prefix"
+#     )
+#     parser.add_argument("--num_iterations", type=int, default=3)
+#     parser.add_argument("--grad_length", type=int, default=10000)
+#     parser.add_argument(
+#         "--window_length",
+#         type=int,
+#         default=0,
+#         help="Length of past which is being optimized; "
+#              "0 corresponds to infinite window length",
+#     )
+#     parser.add_argument(
+#         "--horizon_length",
+#         type=int,
+#         default=1,
+#         help="Length of future to optimize over",
+#     )
+#     parser.add_argument("--decay", action="store_true",
+#                         help="whether to decay or not")
+#     parser.add_argument("--gamma", type=float, default=1.5)
+#     parser.add_argument("--gm_scale", type=float, default=0.9)
+#     parser.add_argument("--kl_scale", type=float, default=0.01)
+#     parser.add_argument("--seed", type=int, default=0)
+#     parser.add_argument("--no_cuda", action="store_true", help="no cuda")
+#     parser.add_argument("--colorama", action="store_true",
+#                         help="colors keywords")
+#     parser.add_argument("--verbosity", type=str, default="very_verbose",
+#                         choices=(
+#                             "quiet", "regular", "verbose", "very_verbose"),
+#                         help="verbosiry level")
+#
+#     args = parser.parse_args()
+#     run_pplm_example(**vars(args))
