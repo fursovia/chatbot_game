@@ -33,9 +33,10 @@ async def greetings(message: types.Message):
     choose_games_keyboard = types.InlineKeyboardMarkup(resize_keyboard=True,
                                                        one_time_keyboard=True,
                                                        reply=False)
-    button_guess_topic_game = types.InlineKeyboardButton('Guess topic',
-                                                         callback_data=CALLBACK_SELECT_GAME + '1')
-    choose_games_keyboard.add(button_guess_topic_game)
+    for game_id, game_name in GAMES_NAMES.items():
+        button_guess_topic_game = types.InlineKeyboardButton(game_name,
+                                                             callback_data=CALLBACK_SELECT_GAME + game_id)
+        choose_games_keyboard.add(button_guess_topic_game)
 
     await message.reply("Hi!\nWhat game shall we play?",
                         reply_markup=choose_games_keyboard,
@@ -61,10 +62,44 @@ async def start_game(callback_query: types.CallbackQuery):
 
     game_class = GAMES[code_of_game]
 
-    # TODO Здесь надо принять от пользователя затравку для текста, если игра это предполагает
+    conditional_text_keyboard = types.InlineKeyboardMarkup(resize_keyboard=True,
+                                                           one_time_keyboard=True,
+                                                           reply=False)
+    conditional_text_keyboard.add(
+        types.InlineKeyboardButton('Yes', callback_data='conditional_1'+':'+code_of_game),
+        types.InlineKeyboardButton('No', callback_data='conditional_0'+':'+code_of_game)
+    )
 
+    await callback_query.message.reply("Would you like to write some initial text?",
+                                       reply_markup=conditional_text_keyboard,
+                                       reply=False)
+
+
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith('conditional_'))
+async def conditional_text_or_not(callback_query: types.CallbackQuery):
+    is_conditional = callback_query.data[len('conditional_'):]
+    code_of_game = is_conditional[2:]
+    is_conditional = is_conditional[0]
+
+    # Скрываем кнопки после выбора с затравкой или без
+    await bot.edit_message_reply_markup(chat_id=callback_query.message.chat.id,
+                                        message_id=callback_query.message.message_id)
+
+    text = ''
+    if int(is_conditional):
+        await callback_query.message.reply("Write out text:",
+                                           reply=False)
+
+    # TODO Не понятно как получить затравку введеную пользователем
+    #
+    #     @dp.message_handler()
+    #     async def echo(message: types.Message):
+    #         text = message.text
+
+
+    game_class = GAMES[code_of_game]
     game = game_class()
-    game.triger_start_game()  # TODO Затравка передается так: (conditional_text_prefix='The world ')
+    game.triger_start_game(conditional_text_prefix=text)
 
     # Отправляем сгенерированный текст пользователю
     game.triger_receive_text()
