@@ -76,25 +76,24 @@ def generate_perturbed_text(
         tokenizer,
         context=None,
         past=None,
-        device="cuda",
-        perturb=True,
+        device=None,
         bow_indices=None,
         classifier=None,
         class_label=None,
-        loss_type=0,
-        length=40,
-        stepsize=0.02,
-        temperature=1.0,
-        top_k=10,
-        sample=True,
-        num_iterations=3,
-        grad_length=10000,
-        horizon_length=1,
-        window_length=0,
-        decay=False,
-        gamma=1.5,
-        gm_scale=0.9,
-        kl_scale=0.01,
+        horizon_length=None,
+        loss_type=None,
+        length=None,
+        sample=None,
+        temperature=None,
+        gm_scale=None,
+        top_k=None,
+        gamma=None,
+        kl_scale=None,
+        decay=None,
+        window_length=None,
+        grad_length=None,
+        num_iterations=None,
+        stepsize=None
 ):
     """
     Генерирует возмущенный или невозмущенный текст. Что именно из этого - зависит от аргументов функции.
@@ -146,7 +145,7 @@ def generate_perturbed_text(
         # modify the past if necessary
 
         # Если мы не хотим возмущать скрытое состояние
-        if not perturb or num_iterations == 0:
+        if num_iterations == 0:
             pert_past = past
 
         # Здесь мы хотим немного возмутить скрытое состояние сети past,
@@ -198,30 +197,24 @@ def generate_perturbed_text(
 
         # Если хотим, учитываем для моделирования последнего слова логиты и
         # возмущенной, и невозмущенной модели
-        if perturb:
 
-            # Берем вероятностное распределение для последнего токена в последовательности для
-            # невозмущенной модели
-            unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
+        # Берем вероятностное распределение для последнего токена в последовательности для
+        # невозмущенной модели
+        unpert_probs = F.softmax(unpert_logits[:, -1, :], dim=-1)
 
-            # Перемножаем почленно исправленные на степень вероятности токенов для возмущенной
-            # и невозмущенной модели. В статье это называется geometric mean fusion и служит
-            # стабильности модели, чтобы она, семплируя из распределения p(a|x), не забывала про само p(x)
-            pert_probs = ((pert_probs ** gm_scale) * (
-                    unpert_probs ** (1 - gm_scale)))  # + SMALL_CONST
+        # Перемножаем почленно исправленные на степень вероятности токенов для возмущенной
+        # и невозмущенной модели. В статье это называется geometric mean fusion и служит
+        # стабильности модели, чтобы она, семплируя из распределения p(a|x), не забывала про само p(x)
+        pert_probs = ((pert_probs ** gm_scale) * (
+                unpert_probs ** (1 - gm_scale)))  # + SMALL_CONST
 
-            # Из полученного вероятностного распределения отфильтровываем топ k максимальных чисел
-            pert_probs = top_k_filter(pert_probs, k=top_k,
-                                      probs=True)  # + SMALL_CONST
+        # Из полученного вероятностного распределения отфильтровываем топ k максимальных чисел
+        pert_probs = top_k_filter(pert_probs, k=top_k,
+                                  probs=True)  # + SMALL_CONST
 
-            # Если слетела нормировка вероятностного распределения на единицу, восстанавливаем её
-            if torch.sum(pert_probs) <= 1:
-                pert_probs = pert_probs / torch.sum(pert_probs)
-
-        # Или же просто получаем вероятностное распределение токенов для возмущенной модели
-        else:
-            pert_logits = top_k_filter(pert_logits, k=top_k)  # + SMALL_CONST
-            pert_probs = F.softmax(pert_logits, dim=-1)
+        # Если слетела нормировка вероятностного распределения на единицу, восстанавливаем её
+        if torch.sum(pert_probs) <= 1:
+            pert_probs = pert_probs / torch.sum(pert_probs)
 
         # Из полученного вектора вероятностного распределения получаем
         # один индекс какого-то логита в этом векторе
@@ -248,22 +241,23 @@ def perturb_past_gpt2(
         past,  # tuple[tensor]
         model,
         last,  # [[int]] - tensor
+        device,
         unpert_past=None,
         unpert_logits=None,
         accumulated_hidden=None,
         grad_norms=None,
-        stepsize=0.01,
+        loss_type=None,
         one_hot_bows_vectors=None,
         classifier=None,
+        horizon_length=None,
         class_label=None,
-        loss_type=0,
-        num_iterations=3,
-        horizon_length=1,
-        window_length=0,
-        decay=False,
-        gamma=1.5,
-        kl_scale=0.01,
-        device='cuda'
+        gamma=None,
+        kl_scale=None,
+        decay=None,
+        window_length=None,
+        stepsize=None,
+        num_iterations=None
+
 ):
     """
     Принимает на вход кортеж past = H_t из статьи и возвращает возмущенное
@@ -283,7 +277,7 @@ def perturb_past_gpt2(
         accumulated_hidden = 0
 
     if decay:
-        # Вектор возрастающих чисел меньше единицы, начиная не с нуля, длины window_length.
+        # decay mask - вектор возрастающих чисел меньше единицы, начиная не с нуля, длины window_length.
         # Используется для построения маски, призванной скрывать вклады далеких от текущего слова
         # слов в последовательности в предсказание следующего слова
         decay_mask = torch.arange(
