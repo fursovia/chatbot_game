@@ -13,6 +13,28 @@ class AbstractGame(ABC):
     """
     Абстрактный класс игры, реализуемой через машину состояний
     """
+    states = ['start', 'text_generation', 'text_received', 'user_win', 'user_loose']
+
+    transitions = [
+        {'trigger': 'triger_start_game',
+         'source': 'start',
+         'dest': 'text_generation',
+         'before': 'start'},
+
+        {'trigger': 'triger_receive_text',
+         'source': 'text_generation',
+         'dest': 'text_received',
+         'before': 'receive_text'},
+
+        {'trigger': 'triger_finish_game',
+         'source': 'text_received',
+         'dest': 'user_win',
+         'conditions': 'is_user_win'},
+
+        {'trigger': 'triger_finish_game',
+         'source': 'text_received',
+         'dest': 'user_loose'}
+    ]
 
     @abstractmethod
     def select_bow(self, *args, **kwargs):
@@ -40,14 +62,35 @@ class AbstractGame(ABC):
 
     @abstractmethod
     def tokens_postprocessing(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs:
+        :return:
+        """
         pass
 
     @abstractmethod
-    def run(self):
+    def start(self, *args, **kwargs):
         """
-        Метод, запускающий игры
+        Вызывается при 'triger_start_game'
+        для перехода от состояния 'start'
+        к состоянию 'text_generation',
         :return:
         """
+        pass
+
+    @abstractmethod
+    def receive_text(self):
+        """
+        Вызывается при 'triger_receive_text',
+        для перехода от состояния 'text_generation'
+        к состоянию 'text_received'
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def is_user_win(self, *rgs, **kwargs):
         pass
 
 
@@ -55,74 +98,37 @@ class GuessTopicGame(AbstractGame):
     """
     Случайно выбирает тему и генерирует текст, а пользователь должен угадать эту тему.
     """
-    states = ['start', 'topics_received', 'topic_selected',
-              'text_generated', 'text_received', 'user_win', 'user_loose']
-
-    transitions = [
-        {'trigger': 'start_game',
-         'source': 'start',
-         'dest': 'topics_received',
-         'before': 'request_topics_from_clf'},
-
-        {'trigger': 'select_topic',
-         'source': 'topics_received',
-         'dest': 'topic_selected',
-         'before': 'choose_topic'},
-
-        {'trigger': 'request_text',
-         'source': 'topic_selected',
-         'dest': 'text_generated',
-         'before': 'request_text_from_clf'},
-
-        {'trigger': 'receive_text',
-         'source': 'text_generated',
-         'dest': 'text_received',
-         'before': 'receive_text_to_telegram'},
-
-        {'trigger': 'user_choose_topic',
-         'source': 'text_received',
-         'dest': 'user_win',
-         'conditions': 'is_user_win',
-         'after': 'tokens_postprocessing'},
-
-        {'trigger': 'user_choose_topic',
-         'source': 'text_received',
-         'dest': 'user_loose',
-         'after': 'tokens_postprocessing'}
-    ]
 
     def __init__(self):
 
         self.game = Machine(model=self,
                             states=GuessTopicGame.states,
                             initial='start',
-                            transitions=GuessTopicGame.transitions)
+                            transitions=GuessTopicGame.transitions,
+                            ignore_invalid_triggers=True)
 
         self.model_name = "gpt2-medium"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model, self.tokenizer = initialize_model_and_tokenizer(model_name=self.model_name,
                                                                     device=self.device)
-        self.context = prepare_text_primer(tokenizer=self.tokenizer,
-                                           cond_text="",
-                                           device=self.device)
         self.bow = None or self.select_bow()
         self.discriminator = None or self.select_discriminator()
         self.model_hyperparameters = self.select_model_hyperparameters()
 
+        self.topics = list(BAG_OF_WORDS_ADDRESSES.keys())
+        self.random_chosen_topic = ''
         self.unpert_gen_text = ''
         self.pert_gen_texts = []
 
-    def request_topics_from_clf(self):
-        self.topics = list(BAG_OF_WORDS_ADDRESSES.keys())
-
-    def choose_topic(self):
+    def start(self, *, conditional_text_prefix=''):
         if self.topics:
             self.random_chosen_topic = random.choice(self.topics)
 
-    def request_text_from_clf(self):
-        pass
+        self.context = prepare_text_primer(tokenizer=self.tokenizer,
+                                           cond_text=conditional_text_prefix,
+                                           device=self.device)
 
-    def receive_text_to_telegram(self):
+    def receive_text(self):
         pert_tok_texts = full_text_generation(model=self.model,
                                               tokenizer=self.tokenizer,
                                               context=self.context,
@@ -131,19 +137,17 @@ class GuessTopicGame(AbstractGame):
                                               **self.model_hyperparameters)
         self.pert_tok_texts = pert_tok_texts
 
-    def receive_topic_from_user(self) -> str:
-        pass
-        # return 'religion'
+        self.tokens_postprocessing()
 
     def tokens_postprocessing(self, *args, **kwargs):
         for i, pert_gen_tok_text in enumerate(self.pert_tok_texts):
             decoded_gen_text = decode_text_from_tokens(tokenizer=self.tokenizer,
                                                        tokens=pert_gen_tok_text)
-
+            print(decoded_gen_text)
             self.pert_gen_texts.append(decoded_gen_text)
 
-    def is_user_win(self) -> bool:
-        topic_selected_by_user = self.receive_topic_from_user()
+    def is_user_win(self, topic_selected_by_user):
+        print('inside is_user_win: topic_selected_by_user=', topic_selected_by_user )
         if topic_selected_by_user:
             return topic_selected_by_user.lower() == self.random_chosen_topic
         else:
@@ -188,20 +192,16 @@ class GuessTopicGame(AbstractGame):
         return res
 
     def run(self):
-        self.start_game()
-        self.select_topic()
-        self.request_text()
-        self.receive_text()
-        self.user_choose_topic()
+        self.triger_start_game(conditional_text_prefix='The world ')
+        self.triger_receive_text()
+        self.triger_finish_game('military_test')
 
 
 def example_of_using_GuessTopicGame(game_=None):
     game = game_ or GuessTopicGame()
-    game.start_game()
-    game.select_topic()
-    game.request_text()
-    game.receive_text()
-    game.user_choose_topic()
+    game.triger_start_game(conditional_text_prefix='The world ')
+    game.triger_receive_text()
+    game.triger_finish_game('military_test')
 
 
 if __name__ == '__main__':

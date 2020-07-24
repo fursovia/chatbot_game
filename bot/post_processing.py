@@ -1,6 +1,6 @@
 from aiogram import types
 import random
-#from bot.bot import CALLBACK_USER_ANSWER
+
 CALLBACK_IN_GUESS_TOPIC_GAME = 'answer_topic_'
 
 
