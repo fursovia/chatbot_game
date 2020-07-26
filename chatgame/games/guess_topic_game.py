@@ -8,33 +8,30 @@ from chatgame.language_models.gpt2.gpt2 import BAG_OF_WORDS_ADDRESSES
 from chatgame.utils.misc import decode_text_from_tokens
 from chatgame.utils.model_loader import initialize_model_and_tokenizer, prepare_text_primer
 
-
 class AbstractGame(ABC):
     """
     Абстрактный класс игры, реализуемой через машину состояний
     """
-    states = ['start', 'text_generation', 'text_received', 'user_win', 'user_loose']
+    states = ['start', 'text_generation', 'text_received', 'users_turn']
 
     transitions = [
         {'trigger': 'triger_start_game',
          'source': 'start',
          'dest': 'text_generation',
-         'before': 'start'},
+         'after': 'start'},
 
         {'trigger': 'triger_receive_text',
          'source': 'text_generation',
          'dest': 'text_received',
-         'before': 'receive_text'},
+         'after': 'receive_text'},
 
         {'trigger': 'triger_finish_game',
          'source': 'text_received',
-         'dest': 'user_win',
-         'conditions': 'is_user_win'},
-
-        {'trigger': 'triger_finish_game',
-         'source': 'text_received',
-         'dest': 'user_loose'}
+         'dest': 'users_turn',
+         'before': 'is_user_win'}
     ]
+
+    final_message = ''
 
     @abstractmethod
     def select_bow(self, *args, **kwargs):
@@ -89,10 +86,6 @@ class AbstractGame(ABC):
         """
         pass
 
-    @abstractmethod
-    def is_user_win(self, *rgs, **kwargs):
-        pass
-
 
 class GuessTopicGame(AbstractGame):
     """
@@ -104,8 +97,8 @@ class GuessTopicGame(AbstractGame):
         self.game = Machine(model=self,
                             states=GuessTopicGame.states,
                             initial='start',
-                            transitions=GuessTopicGame.transitions,
-                            ignore_invalid_triggers=True)
+                            transitions=GuessTopicGame.transitions)
+                            # ignore_invalid_triggers = True)
 
         self.model_name = "gpt2-medium"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -143,15 +136,18 @@ class GuessTopicGame(AbstractGame):
         for i, pert_gen_tok_text in enumerate(self.pert_tok_texts):
             decoded_gen_text = decode_text_from_tokens(tokenizer=self.tokenizer,
                                                        tokens=pert_gen_tok_text)
-            print(decoded_gen_text)
+
             self.pert_gen_texts.append(decoded_gen_text)
 
     def is_user_win(self, topic_selected_by_user):
-        print('inside is_user_win: topic_selected_by_user=', topic_selected_by_user )
-        if topic_selected_by_user:
-            return topic_selected_by_user.lower() == self.random_chosen_topic
+        print("\n\nin is_user_win {0}, {1}\n\n".format(topic_selected_by_user, self.random_chosen_topic))
+
+        if topic_selected_by_user and topic_selected_by_user.lower() == self.random_chosen_topic:
+            user_status = 'win'
         else:
-            return False
+            user_status = 'loose'
+
+        self.final_message = 'You {0} the game!'.format(user_status)
 
     def select_bow(self):
         topics = [t for t in BAG_OF_WORDS_ADDRESSES]
@@ -168,7 +164,7 @@ class GuessTopicGame(AbstractGame):
         np_random.seed(seed)
 
     def select_model_hyperparameters(self):
-        length = {"length": 70,
+        length = {"length": 7,
                   "num_samples": 1}
 
         sampling = {"sample": True,
@@ -198,10 +194,20 @@ class GuessTopicGame(AbstractGame):
 
 
 def example_of_using_GuessTopicGame(game_=None):
-    game = game_ or GuessTopicGame()
+    game = GuessTopicGame()
     game.triger_start_game(conditional_text_prefix='The world ')
     game.triger_receive_text()
-    game.triger_finish_game('military_test')
+    game.triger_finish_game('military')
+
+    game1 = GuessTopicGame()
+    game1.triger_start_game(conditional_text_prefix='The forest ')
+    game1.triger_receive_text()
+    game1.triger_finish_game('science')
+
+    game2 = GuessTopicGame()
+    game2.triger_start_game(conditional_text_prefix='The forest ')
+    game2.triger_receive_text()
+    game2.triger_finish_game('science')
 
 
 if __name__ == '__main__':

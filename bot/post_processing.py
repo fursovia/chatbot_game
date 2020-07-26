@@ -1,10 +1,8 @@
 from aiogram import types
 import random
 
-CALLBACK_IN_GUESS_TOPIC_GAME = 'answer_topic_'
 
-
-async def guess_game_first_post_processing(game, callback_query: types.CallbackQuery):
+async def guess_game_first_post_processing(game, message: types.Message):
 
     # Кнопки с выбором вариантов тем.
     topics_keyboard = types.InlineKeyboardMarkup(resize_keyboard=True,
@@ -22,18 +20,18 @@ async def guess_game_first_post_processing(game, callback_query: types.CallbackQ
     for topic in topic_variants:
         # Через callback передаем истинную тему текста (после знака ':')
         button_topic = types.InlineKeyboardButton(topic,
-                                                  callback_data=CALLBACK_IN_GUESS_TOPIC_GAME + topic +
+                                                  callback_data='first_post_processing_answer_' + topic +
                                                                 ':' + game.random_chosen_topic)
         topics_keyboard.add(button_topic)
 
-    await callback_query.message.reply("Try to guess the topic of the previous text.",
-                                       reply_markup=topics_keyboard,
-                                       reply=False)
+    await message.reply("Try to guess the topic of the previous text.",
+                        reply_markup=topics_keyboard,
+                        reply=False)
 
 
-async def guess_game_second_post_processing(bot, callback_user_answer, callback_query: types.CallbackQuery):
+async def guess_game_second_post_processing(bot, callback_query: types.CallbackQuery):
     # из callback берем выбранную пользователем тему, а также истинную тему
-    answer_topic = callback_query.data[len(callback_user_answer):]
+    answer_topic = callback_query.data[len('first_post_processing_answer_'):]
     ind_true_answer = answer_topic.find(':')
     true_topic = answer_topic[ind_true_answer + 1:]
     answer_topic = answer_topic[:ind_true_answer]
