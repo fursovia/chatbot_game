@@ -104,7 +104,7 @@ class GuessTopicGame(AbstractGame):
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model, self.tokenizer = initialize_model_and_tokenizer(model_name=self.model_name,
                                                                     device=self.device)
-        self.bow = None or self.select_bow()
+        self.bow = ''
         self.discriminator = None or self.select_discriminator()
         self.model_hyperparameters = self.select_model_hyperparameters()
 
