@@ -10,9 +10,9 @@ async def guess_game_first_post_processing(game, message: types.Message):
 
     # Для вывода юзеру игры GuessTopicGame выбираем 4 варианта тем или меньше, если количество тем меньше 4.
     # Причем обязательно добавляем тему, выбранную в движке игры для генерации текста.
-    topic_variants = random.sample(set(game.topics) - set([game.random_chosen_topic]),
+    topic_variants = random.sample(set(game.topics) - set([game.bow]),
                                    min(3, len(game.topics) - 1))
-    topic_variants.append(game.random_chosen_topic)
+    topic_variants.append(game.bow)
 
     # Перемешиваем названия кнопок перед выводом на экран.
     random.shuffle(topic_variants)
@@ -21,7 +21,7 @@ async def guess_game_first_post_processing(game, message: types.Message):
         # Через callback передаем истинную тему текста (после знака ':')
         button_topic = types.InlineKeyboardButton(topic,
                                                   callback_data='first_post_processing_answer_' + topic +
-                                                                ':' + game.random_chosen_topic)
+                                                                ':' + game.bow)
         topics_keyboard.add(button_topic)
 
     await message.reply("Try to guess the topic of the previous text.",

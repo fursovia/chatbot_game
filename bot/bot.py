@@ -87,8 +87,8 @@ async def conditional_text_or_not(callback_query: types.CallbackQuery):
     is_conditional = is_conditional[0]
 
     # Скрываем кнопки после выбора с затравкой или без
-    await bot.edit_message_reply_markup(chat_id=callback_query.message.chat.id,
-                                        message_id=callback_query.message.message_id)
+    await bot.delete_message(chat_id=callback_query.message.chat.id,
+                             message_id=callback_query.message.message_id)
 
     if int(is_conditional):
         await callback_query.message.reply("Write out text:",
