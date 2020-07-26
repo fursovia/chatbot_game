@@ -40,9 +40,9 @@ async def greetings(message: types.Message):
                                                        one_time_keyboard=True,
                                                        reply=False)
     for game_id, game_name in GAMES_NAMES.items():
-        button_guess_topic_game = types.InlineKeyboardButton(game_name,
-                                                             callback_data=CALLBACK_SELECT_GAME + game_id)
-        choose_games_keyboard.add(button_guess_topic_game)
+        button_game = types.InlineKeyboardButton(game_name,
+                                                 callback_data=CALLBACK_SELECT_GAME + game_id)
+        choose_games_keyboard.add(button_game)
 
     await message.reply("Hi!\nWhat game shall we play?",
                         reply_markup=choose_games_keyboard,
