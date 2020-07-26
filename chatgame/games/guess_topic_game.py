@@ -146,9 +146,8 @@ class GuessTopicGame(AbstractGame):
         self.final_message = 'You {0} the game!'.format(user_status)
 
     def select_bow(self):
-        topics = [t for t in BAG_OF_WORDS_ADDRESSES]
-        if topics:
-            return random.choice(topics)
+        if self.topics:
+            return random.choice(self.topics)
 
     def select_discriminator(self):
         return

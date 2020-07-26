@@ -72,8 +72,8 @@ async def start_game(callback_query: types.CallbackQuery):
                                                            one_time_keyboard=True,
                                                            reply=False)
     conditional_text_keyboard.add(
-        types.InlineKeyboardButton('Yes', callback_data='conditional_1'+':'+code_of_game),
-        types.InlineKeyboardButton('No', callback_data='conditional_0'+':'+code_of_game)
+        types.InlineKeyboardButton('Yes', callback_data='conditional_1'),
+        types.InlineKeyboardButton('No', callback_data='conditional_0')
     )
 
     await callback_query.message.reply("Would you like to write some initial text?",
