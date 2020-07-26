@@ -58,7 +58,10 @@ VERBOSITY_LEVELS = {
 BAG_OF_WORDS_ADDRESSES = {
     "fantasy": "fantasy.txt",
     "politics": "politics.txt",
-    "military": "military.txt"
+    "military": "military.txt",
+    "science": "science.txt",
+    "space": "space.txt",
+    "technology": "technology.txt"
 }
 
 
