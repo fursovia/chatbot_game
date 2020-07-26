@@ -164,7 +164,7 @@ class GuessTopicGame(AbstractGame):
         np_random.seed(seed)
 
     def select_model_hyperparameters(self):
-        length = {"length": 7,
+        length = {"length": 70,
                   "num_samples": 1}
 
         sampling = {"sample": True,
