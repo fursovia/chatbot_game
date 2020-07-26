@@ -109,13 +109,11 @@ class GuessTopicGame(AbstractGame):
         self.model_hyperparameters = self.select_model_hyperparameters()
 
         self.topics = list(BAG_OF_WORDS_ADDRESSES.keys())
-        self.random_chosen_topic = ''
         self.unpert_gen_text = ''
         self.pert_gen_texts = []
 
     def start(self, *, conditional_text_prefix=''):
-        if self.topics:
-            self.random_chosen_topic = random.choice(self.topics)
+        self.select_bow()
 
         self.context = prepare_text_primer(tokenizer=self.tokenizer,
                                            cond_text=conditional_text_prefix,
@@ -140,9 +138,7 @@ class GuessTopicGame(AbstractGame):
             self.pert_gen_texts.append(decoded_gen_text)
 
     def is_user_win(self, topic_selected_by_user):
-        print("\n\nin is_user_win {0}, {1}\n\n".format(topic_selected_by_user, self.random_chosen_topic))
-
-        if topic_selected_by_user and topic_selected_by_user.lower() == self.random_chosen_topic:
+        if topic_selected_by_user and topic_selected_by_user.lower() == self.bow:
             user_status = 'win'
         else:
             user_status = 'loose'
