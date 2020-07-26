@@ -1,14 +1,23 @@
 import torch
-from transformers import GPT2Tokenizer
-from transformers.modeling_gpt2 import GPT2LMHeadModel
+from transformers import GPT2Tokenizer, GPT2LMHeadModel
+from chatgame.tokenizers import RuGPT2Tokenizer
+from chatgame.language_models import RuGPT2LMHeadModel
 
 MODELS = {
-    "gpt2-medium":
-        {
-            "model": GPT2LMHeadModel,
-            "tokenizer": GPT2Tokenizer,
-            "default_model_settings": {"output_hidden_states": True}
+    "gpt2-medium": {
+        "model": GPT2LMHeadModel,
+        "tokenizer": GPT2Tokenizer,
+        "default_model_settings": {
+            "output_hidden_states": True
         }
+    },
+    "ru-gpt2": {
+        "model": RuGPT2LMHeadModel,
+        "tokenizer": RuGPT2Tokenizer,
+        "default_model_settings": {
+            "output_hidden_states": True
+        }
+    }
 }
 
 
