@@ -35,6 +35,7 @@ from chatgame.utils.misc import decode_text_from_tokens
 from chatgame.utils.model_loader import initialize_model_and_tokenizer, prepare_text_primer
 from chatgame.bag_of_words.bow_utils import get_bag_of_words_indices
 from chatgame.language_models.gpt2.text_generation import generate_unperturbed_text, generate_perturbed_text
+from chatgame.classifiers.classifier import ClassificationHead, get_classifier
 
 SMALL_CONST = 1e-15
 BIG_CONST = 1e10
@@ -58,9 +59,11 @@ VERBOSITY_LEVELS = {
 BAG_OF_WORDS_ADDRESSES = {
     "fantasy": "fantasy.txt",
     "politics": "politics.txt",
-    "military": "military.txt"
+    "military": "military.txt",
+    "science": "science.txt",
+    "space": "space.txt",
+    "technology": "technology.txt"
 }
-
 
 def full_text_generation(
         model,
@@ -78,11 +81,14 @@ def full_text_generation(
     командной строки. Генерирует невозмущенный текст и указанное количество возмущенных текстов.
     """
     print("INSIDE FULL TEXT GENERATION")
+    directory = path.dirname(__file__)
+
+    classifiers_dir = str(path.join(directory, '../../classifiers/'))
+    classifier, class_id = get_classifier(discrim, class_label, device, classifiers_dir)
 
     bow_indices = []
 
     # Добавление универсального пути в BAG_OF_WORDS_ADDRESSES
-    directory = path.dirname(__file__)
     for key in BAG_OF_WORDS_ADDRESSES.keys():
         BAG_OF_WORDS_ADDRESSES[key] = path.join(directory,
                                                 '../../bag_of_words/wordlists',
@@ -114,6 +120,8 @@ def full_text_generation(
             context=context,
             device=device,
             bow_indices=bow_indices,
+            classifier=classifier,
+            class_label=class_id,
             **kwargs
         )
         pert_gen_tok_texts.append(pert_gen_tok_text)
