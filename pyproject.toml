@@ -9,6 +9,7 @@ python = "^3.6.1"
 transitions = "^0.8.2"
 torch = "^1.5"
 transformers = "^3.0"
+youtokentome = "^1.0"
 
 [tool.poetry.dev-dependencies]
 

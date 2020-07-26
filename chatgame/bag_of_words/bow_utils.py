@@ -47,7 +47,6 @@ def get_bag_of_words_indices(bag_of_words_ids_or_paths: List[str],
             words = f.read().strip().split("\n")
         bow_indices.append(
             [tokenizer.encode(word.strip(),
-                              # похоже, разбивает длинные слова на несколько коротких частей-токенов
                               add_prefix_space=True,
                               add_special_tokens=False)
              for word in words])

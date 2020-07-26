@@ -132,3 +132,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+chatgame/language_models/models/ru-gpt2/pytorch_model.bin
