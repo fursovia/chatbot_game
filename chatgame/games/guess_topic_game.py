@@ -113,7 +113,7 @@ class GuessTopicGame(AbstractGame):
         self.pert_gen_texts = []
 
     def start(self, *, conditional_text_prefix=''):
-        self.select_bow()
+        self.bow = self.select_bow()
 
         self.context = prepare_text_primer(tokenizer=self.tokenizer,
                                            cond_text=conditional_text_prefix,
