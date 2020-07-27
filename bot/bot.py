@@ -27,6 +27,15 @@ GAMES_FUNCTION_SECOND_POST_PROCESSING = {'1': guess_game_second_post_processing}
 game_sessions = {}
 # Код игры выбранный пользователем, где ключом является id пользователя (callback_query.from_user.id)
 all_codes_of_game = {}
+# Язык игры, ключом - id пользователя (callback_query.from_user.id)
+language_of_games = {}
+
+LANGUAGES = {'en': 'English',
+             'ru': 'Russian'}
+
+# False = чисто английский режим
+# True  = возможность выбора генерации на английском/русском
+IS_MULTILINGUAL_MODE = True
 
 
 @dp.message_handler(commands=['start'])
@@ -49,7 +58,27 @@ async def greetings(message: types.Message):
                         reply=False)
 
 
-@dp.callback_query_handler(lambda c: c.data and c.data.startswith(CALLBACK_SELECT_GAME))
+@dp.callback_query_handler(lambda c: IS_MULTILINGUAL_MODE and c.data and c.data.startswith(CALLBACK_SELECT_GAME))
+async def start_game_multilingual(callback_query: types.CallbackQuery):
+
+    # Скрываем кнопки после выбора игры и пробрасываем в следующий хендлер где создается экземпляр класса игры
+    await bot.edit_message_reply_markup(chat_id=callback_query.message.chat.id,
+                                        message_id=callback_query.message.message_id)
+
+    select_language_keyboard = types.InlineKeyboardMarkup(resize_keyboard=True,
+                                                          one_time_keyboard=True,
+                                                          reply=False)
+    select_language_keyboard.add(
+        types.InlineKeyboardButton('English', callback_data='lang_en' + callback_query.data),
+        types.InlineKeyboardButton('Russian', callback_data='lang_ru' + callback_query.data)
+    )
+
+    await callback_query.message.reply("On what language do you want to play?",
+                                       reply_markup=select_language_keyboard,
+                                       reply=False)
+
+
+@dp.callback_query_handler(lambda c: c.data and c.data.startswith((CALLBACK_SELECT_GAME, 'lang_')))
 async def start_game(callback_query: types.CallbackQuery):
     """
     В зависимости от нажатой кнопки в функции greetings здесь запускается
@@ -57,15 +86,27 @@ async def start_game(callback_query: types.CallbackQuery):
     :param callback_query:
     :return:
     """
-    code_of_game = callback_query.data[len(CALLBACK_SELECT_GAME):]
+
+    # Считываем из callback код игры и язык, если мультиязычность включена (IS_MULTILINGUAL_MODE)
+    language = 'en'
+    if IS_MULTILINGUAL_MODE:
+        language = callback_query.data[5:7]
+        code_of_game = callback_query.data[len('lang_xx'+CALLBACK_SELECT_GAME):]
+    else:
+        code_of_game = callback_query.data[len(CALLBACK_SELECT_GAME):]
+
     # Сохраняем в глобальный словарь код игры
     all_codes_of_game[callback_query.from_user.id] = code_of_game
 
-    # Скрываем кнопки после выбора игры
-    await bot.edit_message_reply_markup(chat_id=callback_query.message.chat.id,
-                                        message_id=callback_query.message.message_id)
+    # Сохраняем в глобальный словарь язык игры
+    language_of_games[callback_query.from_user.id] = language
 
-    await callback_query.message.reply("You choose the '{}' game!".format(GAMES_NAMES[code_of_game]),
+    # Скрываем кнопки после выбора игры
+    await bot.delete_message(chat_id=callback_query.message.chat.id,
+                             message_id=callback_query.message.message_id)
+
+    await callback_query.message.reply("You choose the '{0}' game on {1} language!".format(GAMES_NAMES[code_of_game],
+                                                                                           LANGUAGES[language]),
                                        reply=False)
 
     conditional_text_keyboard = types.InlineKeyboardMarkup(resize_keyboard=True,
@@ -102,7 +143,7 @@ async def generate_text(message: types.Message):
     await in_generate_text(message.text, message.from_user.id, message)
 
 
-async def in_generate_text(message_text, user_id, message: types.Message):
+async def in_generate_text(message_text, user_id, message: types.Message, language='en'):
     if message_text:
         text = message_text
     else:
@@ -111,7 +152,10 @@ async def in_generate_text(message_text, user_id, message: types.Message):
     code_of_game = all_codes_of_game[user_id]
     game_class = GAMES[code_of_game]
 
-    game_sessions[user_id] = game_class()
+    language = language_of_games[user_id]
+
+    # Создаем экземпляр класса игры и сохраняем по user_id в словаря
+    game_sessions[user_id] = game_class(language=language)
     game = game_sessions[user_id]
 
     game.triger_start_game(conditional_text_prefix=text)

@@ -3,10 +3,12 @@ import random
 import torch
 from numpy import random as np_random
 from abc import ABC, abstractmethod
+import regex
 from chatgame.language_models.gpt2.gpt2 import full_text_generation
 from chatgame.language_models.gpt2.gpt2 import BAG_OF_WORDS_ADDRESSES
 from chatgame.utils.misc import decode_text_from_tokens
 from chatgame.utils.model_loader import initialize_model_and_tokenizer, prepare_text_primer
+
 
 class AbstractGame(ABC):
     """
@@ -92,13 +94,15 @@ class GuessTopicGame(AbstractGame):
     Случайно выбирает тему и генерирует текст, а пользователь должен угадать эту тему.
     """
 
-    def __init__(self):
+    def __init__(self, language='en'):
 
         self.game = Machine(model=self,
                             states=GuessTopicGame.states,
                             initial='start',
                             transitions=GuessTopicGame.transitions)
                             # ignore_invalid_triggers = True)
+
+        self.language = language
 
         self.model_name = "gpt2-medium"
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -108,7 +112,11 @@ class GuessTopicGame(AbstractGame):
         self.discriminator = None or self.select_discriminator()
         self.model_hyperparameters = self.select_model_hyperparameters()
 
-        self.topics = list(BAG_OF_WORDS_ADDRESSES.keys())
+        if self.language == 'en':
+            self.topics = [b for b in BAG_OF_WORDS_ADDRESSES.keys() if not bool(regex.search(r'\p{IsCyrillic}', b))]
+        elif self.language == 'ru':
+            self.topics = [b for b in BAG_OF_WORDS_ADDRESSES.keys() if bool(regex.search(r'\p{IsCyrillic}', b))]
+
         self.unpert_gen_text = ''
         self.pert_gen_texts = []
 
