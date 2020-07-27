@@ -104,19 +104,20 @@ class GuessTopicGame(AbstractGame):
 
         self.language = language
 
-        self.model_name = "gpt2-medium"
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.model, self.tokenizer = initialize_model_and_tokenizer(model_name=self.model_name,
-                                                                    device=self.device)
         self.bow = ''
         self.discriminator = None or self.select_discriminator()
         self.model_hyperparameters = self.select_model_hyperparameters()
 
         if self.language == 'en':
+            self.model_name = "gpt2-medium"
             self.topics = [b for b in BAG_OF_WORDS_ADDRESSES.keys() if not bool(regex.search(r'\p{IsCyrillic}', b))]
         elif self.language == 'ru':
+            self.model_name = "ru-gpt2"
             self.topics = [b for b in BAG_OF_WORDS_ADDRESSES.keys() if bool(regex.search(r'\p{IsCyrillic}', b))]
 
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model, self.tokenizer = initialize_model_and_tokenizer(model_name=self.model_name,
+                                                                    device=self.device)
         self.unpert_gen_text = ''
         self.pert_gen_texts = []
 
