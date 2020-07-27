@@ -44,7 +44,7 @@ def prepare_text_primer(tokenizer, cond_text, device, debug_print=False):
         )
     else:
         tokenized_cond_text = tokenizer.encode(
-            [tokenizer.bos_token],
+            tokenizer.bos_token,
             add_special_tokens=False
         )
 

@@ -61,7 +61,8 @@ class RuGPT2Tokenizer(PreTrainedTokenizer):
     def decode(self, token_ids, **kwargs) -> str:
         if isinstance(token_ids, torch.Tensor):
             token_ids = token_ids.tolist()
-        return self.bpe.decode(token_ids)
+        token_ids = [ids for ids in token_ids if ids < 50000]
+        return self.bpe.decode(token_ids)[0]
 
     def encode(self, text: str,
                add_prefix_space: bool = False,
