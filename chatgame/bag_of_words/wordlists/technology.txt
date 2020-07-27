@@ -177,7 +177,7 @@ surf
 syntax
 table
 tag
-teminal
+terminal
 template
 terabyte
 text-editor
