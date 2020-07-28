@@ -1,3 +1,7 @@
+# IDE settings
+.idea
+.vscode
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -106,6 +110,7 @@ celerybeat.pid
 .venv
 env/
 venv/
+venv7/
 ENV/
 env.bak/
 venv.bak/
@@ -127,3 +132,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+chatgame/language_models/models/ru-gpt2/pytorch_model.bin

@@ -1,94 +1,217 @@
 from transitions import Machine
 import random
-import typing as tp
+import torch
+from numpy import random as np_random
+from abc import ABC, abstractmethod
+import regex
+from chatgame.language_models.gpt2.gpt2 import full_text_generation
+from chatgame.language_models.gpt2.gpt2 import BAG_OF_WORDS_ADDRESSES
+from chatgame.utils.misc import decode_text_from_tokens
+from chatgame.utils.model_loader import initialize_model_and_tokenizer, prepare_text_primer
 
 
-class GuessTopicGame:
+class AbstractGame(ABC):
+    """
+    Абстрактный класс игры, реализуемой через машину состояний
+    """
+    states = ['start', 'text_generation', 'text_received', 'users_turn']
+
+    transitions = [
+        {'trigger': 'triger_start_game',
+         'source': 'start',
+         'dest': 'text_generation',
+         'after': 'start'},
+
+        {'trigger': 'triger_receive_text',
+         'source': 'text_generation',
+         'dest': 'text_received',
+         'after': 'receive_text'},
+
+        {'trigger': 'triger_finish_game',
+         'source': 'text_received',
+         'dest': 'users_turn',
+         'before': 'is_user_win'}
+    ]
+
+    final_message = ''
+
+    @abstractmethod
+    def select_bow(self, *args, **kwargs):
+        """
+        Метод выбора мешка/мешков слов для конкретной игры
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def select_discriminator(self, *args, **kwargs):
+        """
+        Метод выбора одного или нескольких дискриминаторов для конкретной игры
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def select_model_hyperparameters(self, *args, **kwargs):
+        """
+        Метод, возвращающий словарь с гиперпараметрами для языковой модели
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def tokens_postprocessing(self, *args, **kwargs):
+        """
+        :param args:
+        :param kwargs:
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def start(self, *args, **kwargs):
+        """
+        Вызывается при 'triger_start_game'
+        для перехода от состояния 'start'
+        к состоянию 'text_generation',
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    def receive_text(self):
+        """
+        Вызывается при 'triger_receive_text',
+        для перехода от состояния 'text_generation'
+        к состоянию 'text_received'
+        :return:
+        """
+        pass
+
+
+class GuessTopicGame(AbstractGame):
     """
     Случайно выбирает тему и генерирует текст, а пользователь должен угадать эту тему.
     """
-    states = ['start', 'topics_received', 'topic_selected',
-              'text_generated', 'text_received', 'user_win', 'user_loose']
 
-    transitions = [
-        {'trigger': 'start_game',
-         'source': 'start',
-         'dest': 'topics_received',
-         'before': 'request_topics_from_clf'},
-
-        {'trigger': 'select_topic',
-         'source': 'topics_received',
-         'dest': 'topic_selected',
-         'before': 'choose_topic'},
-
-        {'trigger': 'request_text',
-         'source': 'topic_selected',
-         'dest': 'text_generated',
-         'before': 'request_text_from_clf'},
-
-        {'trigger': 'receive_text',
-         'source': 'text_generated',
-         'dest': 'text_received',
-         'before': 'receive_text_to_telegram'},
-
-        {'trigger': 'user_choose_topic',
-         'source': 'text_received',
-         'dest': 'user_win',
-         'conditions': 'is_user_win',
-         'after': 'send_result_to_telegram'},
-
-        {'trigger': 'user_choose_topic',
-         'source': 'text_received',
-         'dest': 'user_loose',
-         'after': 'send_result_to_telegram'}
-    ]
-
-    def __init__(self, len_of_text=40):
-
-        self.topics = []
-        self.random_chosen_topic = ''
-        self.len_of_text = len_of_text
+    def __init__(self, language='en'):
 
         self.game = Machine(model=self,
                             states=GuessTopicGame.states,
                             initial='start',
                             transitions=GuessTopicGame.transitions)
+                            # ignore_invalid_triggers = True)
 
-    def request_topics_from_clf(self):
-        self.topics = ['religion', 'politics']
+        self.language = language
 
-    def choose_topic(self):
-        if self.topics:
-            self.random_chosen_topic = random.choice(self.topics)
+        self.bow = ''
+        self.discriminator = None or self.select_discriminator()
+        self.model_hyperparameters = self.select_model_hyperparameters()
 
-    def request_text_from_clf(self):
-        pass
+        if self.language == 'en':
+            self.model_name = "gpt2-medium"
+            self.topics = [b for b in BAG_OF_WORDS_ADDRESSES.keys() if not bool(regex.search(r'\p{IsCyrillic}', b))]
+        elif self.language == 'ru':
+            self.model_name = "ru-gpt2"
+            self.topics = [b for b in BAG_OF_WORDS_ADDRESSES.keys() if bool(regex.search(r'\p{IsCyrillic}', b))]
 
-    def receive_text_to_telegram(self):
-        pass
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model, self.tokenizer = initialize_model_and_tokenizer(model_name=self.model_name,
+                                                                    device=self.device)
+        self.unpert_gen_text = ''
+        self.pert_gen_texts = []
 
-    def receive_topic_from_user(self) -> str:
-        pass
-        # return 'religion'
+    def start(self, *, conditional_text_prefix=''):
+        self.bow = self.select_bow()
 
-    def send_result_to_telegram(self):
-        pass
+        self.context = prepare_text_primer(tokenizer=self.tokenizer,
+                                           cond_text=conditional_text_prefix,
+                                           device=self.device)
 
-    def is_user_win(self) -> bool:
-        topic_selected_by_user = self.receive_topic_from_user()
-        if topic_selected_by_user:
-            return topic_selected_by_user.lower() == self.random_chosen_topic
+    def receive_text(self):
+        pert_tok_texts = full_text_generation(model=self.model,
+                                              tokenizer=self.tokenizer,
+                                              context=self.context,
+                                              device=self.device,
+                                              bag_of_words=self.bow,
+                                              **self.model_hyperparameters)
+        self.pert_tok_texts = pert_tok_texts
+
+        self.tokens_postprocessing()
+
+    def tokens_postprocessing(self, *args, **kwargs):
+        for i, pert_gen_tok_text in enumerate(self.pert_tok_texts):
+            decoded_gen_text = decode_text_from_tokens(tokenizer=self.tokenizer,
+                                                       tokens=pert_gen_tok_text)
+
+            self.pert_gen_texts.append(decoded_gen_text)
+
+    def is_user_win(self, topic_selected_by_user):
+        if topic_selected_by_user and topic_selected_by_user.lower() == self.bow:
+            user_status = 'win'
         else:
-            return False
+            user_status = 'loose'
+
+        self.final_message = 'You {0} the game!'.format(user_status)
+
+    def select_bow(self):
+        if self.topics:
+            return random.choice(self.topics)
+
+    def select_discriminator(self):
+        return
+
+    @staticmethod
+    def set_seed():
+        seed = 16
+        torch.manual_seed(seed)
+        np_random.seed(seed)
+
+    def select_model_hyperparameters(self):
+        length = {"length": 70,
+                  "num_samples": 1}
+
+        sampling = {"sample": True,
+                    "temperature": 1.0,
+                    "top_k": 10,
+                    "gm_scale": 0.9}
+
+        gradient_descent = {"gamma": 1.5,
+                            "kl_scale": 0.01,
+                            "decay": False,
+                            "window_length": 0,
+                            "grad_length": 10000,
+                            "num_iterations": 3,
+                            "loss_type": 1,
+                            "stepsize": 0.02}
+
+        res = {}
+        res.update(length)
+        res.update(sampling)
+        res.update(gradient_descent)
+        return res
+
+    def run(self):
+        self.triger_start_game(conditional_text_prefix='The world ')
+        self.triger_receive_text()
+        self.triger_finish_game('military_test')
 
 
 def example_of_using_GuessTopicGame(game_=None):
-    game = game_ or GuessTopicGame()
-    game.start_game()
-    game.select_topic()
-    game.request_text()
-    game.receive_text()
-    game.user_choose_topic()
+    game = GuessTopicGame()
+    game.triger_start_game(conditional_text_prefix='The world ')
+    game.triger_receive_text()
+    game.triger_finish_game('military')
+
+    game1 = GuessTopicGame()
+    game1.triger_start_game(conditional_text_prefix='The forest ')
+    game1.triger_receive_text()
+    game1.triger_finish_game('science')
+
+    game2 = GuessTopicGame()
+    game2.triger_start_game(conditional_text_prefix='The forest ')
+    game2.triger_receive_text()
+    game2.triger_finish_game('science')
 
 
 if __name__ == '__main__':
