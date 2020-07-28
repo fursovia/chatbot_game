@@ -53,7 +53,9 @@ BAG_OF_WORDS_ADDRESSES = {
     "science": "science.txt",
     "space": "space.txt",
     "technology": "technology.txt",
-    "наука": "наука.txt"
+    "наука": "наука.txt",
+    "технологии": "технологии.txt",
+    "космос": "космос.txt"
 }
 
 
